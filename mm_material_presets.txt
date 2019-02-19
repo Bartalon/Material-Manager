@@ -12,6 +12,36 @@
 //    9)  Do not add any information between the last swatch entry and the //Material Presets line.
 //	  10) Material Types are case sensitive.  You will get an "invalid or unsupported" warning if the Material Type isn't exact.
 //
+//
+//
+//Valid material names list:
+//  MAYA BUILT IN:  	oceanShader, rampShader, fluidShape, phong, phongE, lambert, blinn, anisotropic, useBackground, hairTubeShader, layeredShader, surfaceShader, shadingMap
+//
+//  DEFAULT PLUGINS: 	cgfxShader, dx11Shader, GLSLShader, ShaderfxShader, StingrayPBS, bitfrostLiquidMaterial
+//
+//  RENDERMAN:			RMSDisplacement, RMSGPSurface, RMSGlass, RMSHair, RMSHoldOut, RMSMatte, RMSOcean, RMSShaveHair, RenderManDisplacement, RenderManShader, RenderManShaderObject, RenderManVolume
+//
+//  MENTAL RAY:			mdl_material, mi_car_paint_phen_x, mi_car_paint_phen_x_passes, mi_metallic_paint_x, mi_metallic_paint_x_passes, mia_material_x, mia_material_x_passes, mib_illum_hair, 
+//						mib_illum_hair_x, mib_ptex_lookup, mila_material, misss_fast_shader2_x, misss_fast_shader_x, misss_fast_shader_x_passes, misss_fast_simple_maya, misss_fast_skin_maya, 
+//						object_light, xgen_hair_phen, xgen_hair_physical
+//
+//  The valid material names above are populated on a per-version and per-plugin basis.  If your version of maya is missing a plugin, the materials associated with
+//  that plugin will not be part of the valid material list.  A material's validity is checked using the function mm_isValidMaterial() and is called when
+//  assigning a preset or when a a material's color channel is being queried (whenever the Material List indicators update or the Current Scene tab is rebuilt)
+//
+//
+//	How it works (for you people who want to tinker with the code):
+//  
+//  Color Presets tab is built using the mm_build_tab_presets() procedure.  At the beginning, mm_getPresetsData() is called which stores all the values from this file.
+//  mm_build_tab_presets() then continues on to populate all the swatch and preset buttons with commands containing the appropriate argument values to call mm_assignPreset()
+//  where the material is created, values are set, and then assigned to the model.
+//	
+//  Approximate location for these procedures:
+//		mm_build_tab_presets()	Line 700
+//  	mm_assignPreset()		Line 1080
+//  	mm_getPresetsData()		Line 2600
+//  	mm_isValidMaterial()	Line 3300
+
 
 
 //Material ID Swatches
