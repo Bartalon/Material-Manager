@@ -1,5 +1,5 @@
-global string $mm_Version = "5.0.1";
-global string $mm_Release = "11 March 2018";
+global string $mm_Version = "5.0.2";
+global string $mm_Release = "13 March 2018";
 global int $mm_scriptJob;
 
 if ( $mm_scriptJob == 0 ) {
@@ -677,6 +677,18 @@ global proc mm_build_tab_presets() {
 	global int $mm_cb_spre;
 	global int $mm_pr_mode;
 	global int $mm_pr_swatchCount;
+	string $mm_i_checker = "MaterialManager/swatch_checker.png";
+	string $pm_label = "Assign to Selection";
+	if ( ! $mm_pr_mode ) { $pm_label = "Add to Scene"; }
+	float $bgc[] = mm_getButtonColor("dark gray");
+	int $len = ($mm_pr_swatchCount);
+	int $tableSize = 9; //This value refers to the number of data columns in mm_material_presets.txt file
+	int $pad = 5;
+	int $h = 20;
+	int $topOffset;
+	int $leftOffset = $pad;
+	int $scrollTop = 25;
+	int $modulo = $mm_bs_wind / ($h + $pad + $pad);
 
 	//Filter presets table
 	string $materialPresetsTable[] = mm_getPresetsData();
@@ -686,26 +698,13 @@ global proc mm_build_tab_presets() {
 		for ( $item in $filteredPresets ) {
 			int $loc = stringArrayFind($item, 0, $materialPresetsTable);
 			if ( $loc != -1 ) {
-				for ( $p=0; $p<9; ++$p ) {
+				for ( $p=0; $p<$tableSize; ++$p ) {
 					$locatedPresets[`size $locatedPresets`] = $materialPresetsTable[$loc + $p];
 				}
 			}
 		}
 		$materialPresetsTable = $locatedPresets;
 	}
-
-	string $mm_i_checker = "MaterialManager/swatch_checker.png";
-	string $pm_label = "Assign to Selection";
-	if ( ! $mm_pr_mode ) { $pm_label = "Add to Scene"; }
-	float $bgc[] = mm_getButtonColor("dark gray");
-	int $tableSize = 9;
-	int $len = ($mm_pr_swatchCount);
-	int $pad = 5;
-	int $h = 20;
-	int $topOffset;
-	int $leftOffset = $pad;
-	int $scrollTop = 25;
-	int $modulo = $mm_bs_wind / ($h + $pad + $pad);
 
 	mm_deleteUI("mm_form_presetMode");
 
@@ -1046,9 +1045,28 @@ global proc mm_assignMaterial(string $mat) {
 			}
 		}
 		else { $assign = $sel; }
+
 		select $assign;
+		eval("hyperShade -assign " + $mat + ";");
+
+		//Some hacky BS here to solve the problem where the instanced meshes lose a shadingEngine
+		//Works most of the time unless the deferred hypershade assignment lands on a polygon that is already assigned with the new material.
+		//Will need to add logic to make sure the deferred assignment is picking a face that has a different material.
+		string $flat[] = `ls -fl $assign[0]`;
+		string $token[] = mm_split($flat[0], "[]");
+		int $index = ((int)$token[1]-1);
+		int $last[] = `polyEvaluate -f $flat[0]`;
+		if ( $index < 0 ) { $index = $last[0]-1; }
+		select ($token[0] + "[" + $index + "]");
+		string $polyMat[] = mm_getAssignedMaterials();
 		hyperShade -assign $mat;
-		select $sel;
+		evalDeferred("hyperShade -assign " + $polyMat[0] + ";");
+		string $cmd = "select ";
+		for ( $item in $assign ) {
+			$cmd = ($cmd + $item + " ");
+		}
+		evalDeferred($cmd);
+
 	}
 	else { hyperShade -assign $mat; }
 
@@ -1180,7 +1198,6 @@ global proc mm_createFileAndConnect(string $mat, string $channel, string $loadFi
 
 global proc string mm_createShaderAndRename(string $type, string $name) {
 	string $newName[];
-
 	if ( $type == "StingrayPBS" ) {
 		//Stingray PBS doesn't load properly if the hypershade is open.  
 		//No idea why, but the Attributes section doesn't populate, essentially breaking the material.
@@ -1189,14 +1206,17 @@ global proc string mm_createShaderAndRename(string $type, string $name) {
 		rename `createRenderNodeCB -asShader "surfaceShader" StingrayPBS ""` $name;
 		setAttr ( $name + ".initgraph" ) true;
 		mm_checkAndRelateStingRayGlobals($name);
-
 	}
 	else {
-		rename `createRenderNodeCB -asShader "surfaceShader" $type ""` $name;
+		//Special treatment for mental ray materials
+		if ( ! mm_isMentalRayMaterial($type) ) { rename `createRenderNodeCB -asShader "surfaceShader" $type ""` $name; }
+		else { rename `mrCreateCustomNode -asShader "" xgen_hair_physical` $name; }
 	}
+
 	$newName = `ls -sl`;
 	$name = $newName[0];
 	rename ( mm_getSG($name) ) ($name + "_SG");
+	warning;
 	return $name;
 }
 
@@ -1348,25 +1368,35 @@ global proc mm_deleteMaterial() {
 		}
 	}
 
-	string $history[];
-	for ( $mat in $mats ) {
-		$history = stringArrayCatenate( $history, `listHistory $mat` );
-	}
-
 	//Delete all things
 	$connections = stringArrayRemove({ $lambert1 }, $connections);
 	$connections = mm_cleanStringArray($connections);
 	$connections = mm_OmitPBSGlobalTextures($connections);
+
+	warning $connections;
+
+	//Here we need to pop any item and its hierachy that is being used by multiple materials
+	int $i;
+	string $omit[];
+	while ( $i < `size $connections` ) {
+		string $a[] = stringArrayRemoveDuplicates(`listConnections -d 1 $connections[$i]`);
+		string $b[] = mm_getAllMaterials();
+		string $c[] = stringArrayRemove($b, $a);
+		//Subtract all scene materials out of the connections of this object.  If the size of the array is smaller by a difference of 2 or greater, then this thing is being shared
+		if ( `size $a` - `size $c` > 1 ) {
+			$omit = stringArrayCatenate($omit, $a);
+			$omit[`size $omit`] = $connections[$i];
+		}
+		++$i;
+	}
+
+	$connections = stringArrayRemove($omit, $connections);
 
 	if ( `size $connections` > 0 ) { delete $connections; }
 
 	$SGs = mm_cleanStringArray($SGs);
 	$SGs = mm_removeNonDeletableNodes($SGs);
 	if ( `size $SGs` > 0 ) { delete $SGs; }
-
-	$history = mm_cleanStringArray($history);
-	$history = mm_removeNonDeletableNodes($history);
-	if ( $history[0] != "" ) { delete $history; }
 
 	$mats = mm_cleanStringArray($mats);
 	$mats = mm_removeNonDeletableNodes($mats);
@@ -1535,12 +1565,13 @@ global proc mm_removeOrphans() {
 	//cleanStringArray catches the hyperShadePrimaryNodeEditorSavedTabsInfo node which can interlink everything in the scene and break the orphan removal process
 	string $mc[] = mm_cleanStringArray( mm_removeNonDeletableNodes( stringArrayRemoveDuplicates(`listConnections $mats`) ) );
 	$mc = stringArrayRemove($SGs, $mc);
-	if ( $mc[0] != "" ) {
+	//if ( $mc[0] != "" ) {
 		string $cc[] = mm_removeNonDeletableNodes( stringArrayRemoveDuplicates(`listConnections $mc`) ); 
 		string $remove[] = stringArrayRemove($cc, $allNodes);
+		warning $remove;
 		$remove = stringArrayRemove($mc, $remove);
 		delete $remove;
-	}
+	//}
 	print "Orphaned utility nodes have been removed from the scene.\n";
 }
 
@@ -1845,6 +1876,8 @@ global proc mm_duplicateMaterial() {
 
 	for ( $mat in $marked ) {
 		string $newName = mm_promptName($mat, "duplicate");
+		if ( $newName == "" ) { return; }  //Stop if Skip is chosen
+		if ( $mm_cb_appm ) { $newName = ("M_" + $newName); }
 
 		if ( $newName != "" ) {
 			select $mat;
@@ -2421,14 +2454,11 @@ global proc string[] mm_getMarkedMaterials() {
 
 
 global proc float[] mm_getMaterialColor(string $mat) {
-	string $attribs[] = { ".color", ".base_color", ".diffuse", ".outColor"  };
+	string $channel = ($mat + ( mm_getValidChannelName($mat, "color") ));
 	float $col[];
 
-	if ( mm_isValidMaterial($mat) ) {
-		for ( $attrib in $attribs ) {
-			$channel = ( $mat + $attrib );
-			if ( `objExists $channel` ) { $col = `getAttr $channel`; break; }
-		}
+	if ( mm_isValidMaterial($mat) && `objExists $channel` ) { 
+		$col = `getAttr $channel`;
 	}
 	else { $col = { 1.0, 0.6, 0.6 }; }
 
@@ -2967,7 +2997,7 @@ global proc mm_updateIndicators() {
 			if ( ! `iconTextButton -ex ("btn_" + $item)` ) { mm_build_tab_main(); return; }
 		}
 
-		//Otherwise just change existing nameplate color
+		//Otherwise just change existing nameplate indicator and assign button colors
 		string $assigned[] = $mm_assigned;
 		string $marked[] = mm_getMarkedMaterials();
 
@@ -2985,13 +3015,16 @@ global proc mm_updateIndicators() {
 
 		int $onSelCounter;
 		for ( $mat in $list ) {
+			float $bgc[] = mm_getMaterialColor($mat);
+			iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ("ass_" + $mat);
+
 			if ( stringArrayContains($mat, $assigned) ) { 
-				float $bgc[] = mm_getButtonColor("blue");
+				$bgc = mm_getButtonColor("blue");
 				iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ( "btn_" + $mat ); 
 				++$onSelCounter;
 			}
 			else { 
-				float $bgc[] = mm_getButtonColor("dark gray");
+				$bgc = mm_getButtonColor("dark gray");
 				iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ( "btn_" + $mat ); 
 			}
 		}
@@ -3271,6 +3304,14 @@ global proc int mm_isMayaLT() {
 }
 
 
+global proc int mm_isMentalRayMaterial(string $mat) {
+	string $mrMats[] = { "mdl_material", "mi_car_paint_phen_x", "mi_car_paint_phen_x_passes", "mi_metallic_paint_x", "mi_metallic_paint_x_passes", "mia_material_x", "mia_material_x_passes", "mib_illum_hair", "mib_illum_hair_x", "mib_ptex_lookup", "mila_material", "misss_fast_shader2_x", "misss_fast_shader_x", "misss_fast_shader_x_passes", "misss_fast_simple_maya", "misss_fast_skin_maya", "object_light", "xgen_hair_phen", "xgen_hair_physical" };
+
+	if ( stringArrayContains($mat, $mrMats) ) { return 1; }
+	else { return 0; }
+}
+
+
 global proc int mm_has(string $subject, string $query) {
 	//catch for periods since they are special snowflakes
 	if ( $query == "\." ) {
@@ -3292,15 +3333,25 @@ global proc int mm_isChannelEmpty(string $path) {
 
 global proc int mm_isValidMaterial(string $mat) {
 	string $types[] = { "oceanShader", "rampShader", "fluidShape", "phong", "phongE", "lambert", "blinn", "anisotropic", "useBackground", "hairTubeShader", "layeredShader", "surfaceShader", "shadingMap" };
-
+	//Add more material types here if there are other plugins you use
 	if ( `pluginInfo -q -l "cgfxShader.mll"` ) { $types = stringArrayCatenate($types, { "cgfxShader" }); }
 	if ( `pluginInfo -q -l "dx11Shader.mll"` ) { $types = stringArrayCatenate($types, { "dx11Shader" }); }
 	if ( `pluginInfo -q -l "glslShader.mll"` ) { $types = stringArrayCatenate($types, { "GLSLShader" }); }
 	if ( `pluginInfo -q -l "shaderFXPlugin.mll"` ) { $types = stringArrayCatenate($types, { "ShaderfxShader", "StingrayPBS" }); }
-	if ( `pluginInfo -q -l "turtle.mll"` ) { 
-		$types = stringArrayCatenate($types, { "ilrAshikhminShader", "ilrBssrdfShader", "ilrDielectricShader" , "ilrHwBakeVisualizer" , "ilrOccSampler" , "ilrOrenNayarShader" }); 
-	}
+	if ( `pluginInfo -q -l "bitfrostvisplugin.mll"` ) { $types = stringArrayCatenate($types, { "bitfrostLiquidMaterial" }); }
+	if ( `pluginInfo -q -l "Mayatomr.mll"` ) { $types = stringArrayCatenate($types, { "mdl_material", "mi_car_paint_phen_x", "mi_car_paint_phen_x_passes", "mi_metallic_paint_x", "mi_metallic_paint_x_passes", "mia_material_x", "mia_material_x_passes", "mib_illum_hair", "mib_illum_hair_x", "mib_ptex_lookup", "mila_material", "misss_fast_shader2_x", "misss_fast_shader_x", "misss_fast_shader_x_passes", "misss_fast_simple_maya", "misss_fast_skin_maya", "object_light", "xgen_hair_phen", "xgen_hair_physical" }); }
+	if ( `pluginInfo -q -l "RenderMan_for_Maya.mll"` ) { $types = stringArrayCatenate($types, { "RMSDisplacement", "RMSGPSurface", "RMSGlass", "RMSHair", "RMSHoldOut", "RMSMatte", "RMSOcean", "RMSShaveHair", "RenderManDisplacement", "RenderManShader", "RenderManShaderObject", "RenderManVolume" }); }
+	if ( `pluginInfo -q -l "turtle.mll"` ) { $types = stringArrayCatenate($types, { "ilrAshikhminShader", "ilrBssrdfShader", "ilrDielectricShader" , "ilrHwBakeVisualizer" , "ilrOccSampler" , "ilrOrenNayarShader" }); }
 	if ( `pluginInfo -q -l "mtoa.mll"` ) { $types = stringArrayCatenate($types, { "" }); }
+
+	//Remove invalid materials from $types that are version-specific
+	//Best example:  shaderFXPlugin.mll includes ShaderfxShader and StingrayPBS in Maya 2016 and newer, but only ShaderfxShader in Maya 2015 and older.
+	//StingrayPBS needs to be removed from the valid material list in order to avoid an error due to an unknown material type.
+	string $versionInvalid_LT[] = { "lambert" };
+	string $versionInvalid_15[] = { "StingrayPBS" };
+	if ( mm_isMayaLT() ) { $types = stringArrayRemove($versionInvalid_LT, $types); }
+	if ( mm_getVersion() < 2016 ) { $types = stringArrayRemove($versionInvalid_15, $types); }
+
 
 	string $valid[];
 	for ( $type in $types ) {
