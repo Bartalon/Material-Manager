@@ -1,5 +1,5 @@
-global string $mm_Version = "5.1.0";
-global string $mm_Release = "24 July 2018";
+global string $mm_Version = "5.1.1";
+global string $mm_Release = "19 August 2018";
 global int $mm_scriptJob;
 
 if ( $mm_scriptJob == 0 ) {
@@ -11,7 +11,7 @@ if ( $mm_scriptJob == 0 ) {
 	global int $mm_cb_suspend;
 	global string $mm_bk_format = "png";
 	if ( ! `objExists "lambert1"`) { $mm_startingSG = "phong"; }
-	$mm_scriptJob = `scriptJob -e "NewSceneOpened" "mm_updateMaterialManager();" -protected`;
+	$mm_scriptJob = `scriptJob -e "NewSceneOpened" "mm_build_tab_main();" -protected`;
 	$mm_scriptJob = `scriptJob -e "PostSceneRead" "mm_updateMaterialManager();" -protected`;
 	$mm_scriptJob = `scriptJob -e "Undo" "mm_updateMaterialManager();" -protected`;
 	$mm_scriptJob = `scriptJob -e "SelectionChanged" "eval(\"mm_updateFrameLayout(1)\"); evalDeferred(\"mm_updateIndicators()\");" -protected`;
@@ -316,7 +316,7 @@ global proc mm_build_banner() {
 	mm_deleteUI("mm_form_banner");
 
 	formLayout -h 50 -vis 0 -p $p mm_form_banner;
-		$bgc = mm_getButtonColor("dark gray");
+		$bgc = mm_getUIColor("dark gray");
 		button -w 75 -h 20 -bgc $bgc[0] $bgc[1] $bgc[2] -l "Import" -c "Import;" -ann "Import files" banner_import;
 		button -w 75 -h 20 -bgc $bgc[0] $bgc[1] $bgc[2] -l "Export" -c "ExportSelection;" -ann "Export selected objects" banner_export;
 		image -image $mm_i_banner -height 50 banner_image;
@@ -346,7 +346,7 @@ global proc mm_build_searchBar() {
 		if ( mm_getVersion() >= 2016 ) { eval $cmd16; }
 		else { eval $cmd13; }
 		iconTextButton -style "iconOnly" -i $mm_i_filter -c "textField -e -tx \"\" mm_searchField; mm_build_tab_main(); setFocus $mm_window;" -ann "Clear search filter" mm_btn_clearSearch;
-		$bgc = mm_getButtonColor("near black");
+		$bgc = mm_getUIColor("near black");
 		frameLayout -cll false -bv off -l "Search by Name or Partial Name" -bgc $bgc[0] $bgc[1] $bgc[2] mm_frame_search;
 
 	if ( ! $mm_cb_bann ) {
@@ -478,7 +478,7 @@ global proc mm_build_channelControl() {
 	};
 
 	$p = "mm_form_channelControl";
-	float $bgc[] = mm_getButtonColor("near black");
+	float $bgc[] = mm_getUIColor("near black");
 	//frameLayout -l "Material Control, Tools, & Channel Control" -bv off -bgc $bgc[0] $bgc[1] $bgc[2] -p $p mm_frame_channelControl;
 	frameLayout -l "" -bv off -bgc $bgc[0] $bgc[1] $bgc[2] -p $p mm_frame_channelControl;
 	int $len = `size $channelControlTable` / 4;
@@ -563,6 +563,8 @@ global proc mm_build_channelControl() {
 		-attachControl 	btn_cc_vertexColor 		"top"		0 		mm_frame_channelControl
 	mm_form_channelControl;
 
+	iconTextButton -e -dcc "mm_loadFilesHelp()" btn_cc_load;
+
 	if ( mm_getVersion() < 2016 ) {
 		formLayout -edit
 			-attachControl 	btn_cc_normal_a 	"right"		0 		btn_cc_specular_a
@@ -584,7 +586,7 @@ global proc mm_build_tabContainer() {
 	global int $mm_bs_wind;
 	global int $mm_cb_suspend;
 	int $distance = 50;
-	float $bgc[] = mm_getButtonColor("near black");
+	float $bgc[] = mm_getUIColor("near black");
 
 	string $tabs = `tabLayout -w ($mm_bs_wind+1) -h 395 -p mm_form_window mm_tabs`;
 	string $tab1 = `frameLayout -cll false -bv off -bgc $bgc[0] $bgc[1] $bgc[2] -l "     Material List" -p $tabs mm_tab_main`;
@@ -698,7 +700,7 @@ global proc mm_build_tab_main() {
 	int $padding = 2;
 	int $formWidth = $mm_bs_wind - 20;
 	if ( mm_getVersion() < 2016 ) { $formWidth = $mm_bs_wind - 24; }
-	float $bgc[] = mm_getButtonColor("dark gray");
+	float $bgc[] = mm_getUIColor("dark gray");
 	float $col[];
 
 	mm_deleteUI("mm_form_mats");
@@ -746,7 +748,7 @@ global proc mm_build_tab_main() {
 		}
 
 	text -e -l $onSelCounter txt_main_assignNum;
-	$bgc = mm_getButtonColor("near black");
+	$bgc = mm_getUIColor("near black");
 	frameLayout -e -l "     Material List" -bgc $bgc[0] $bgc[1] $bgc[2] mm_tab_main;
 	text -e -l (`size $mm_markers`) txt_main_markNum;
 }
@@ -761,7 +763,7 @@ global proc mm_build_tab_presets() {
 	string $mm_i_checker = "MaterialManager/swatch_checker.png";
 	string $pm_label = "Assign to Selection";
 	if ( ! $mm_pr_mode ) { $pm_label = "Add to Scene"; }
-	float $bgc[] = mm_getButtonColor("dark gray");
+	float $bgc[] = mm_getUIColor("dark gray");
 	int $len = ($mm_pr_swatchCount);
 	int $tableSize = 9; //This value refers to the number of data columns in mm_material_presets.txt file
 	int $pad = 5;
@@ -912,7 +914,7 @@ global proc mm_build_tab_baker() {
 	string $mm_i_colorBaker = "MaterialManager/cc_IDbaker.png";
 	string $mm_i_up = "trackUp";
 	string $mm_i_dn = "trackDown";
-	float $bgc[] = mm_getButtonColor("dark gray");
+	float $bgc[] = mm_getUIColor("dark gray");
 	int $short = 25;
 	int $pad = 5;
 	int $tall = ($short * 2);
@@ -965,7 +967,7 @@ global proc mm_build_tab_baker() {
 		button -h $short -vis 1 -l "Show in Explorer" -bgc $bgc[0] $bgc[1] $bgc[2] -w 100
 						-ann "Opens file path in Windows Explorer"
 						-c "mm_bk_browse();" btn_bake_showInExplorer;
-		$bgc = mm_getButtonColor(".5");
+		$bgc = mm_getUIColor(".5");
 		button -en 0 -bgc $bgc[0] $bgc[1] $bgc[2] -h 50 -l "- Bake Color ID Map -" -c "mm_bk_bake();" btn_bake_bake;
 
 		formLayout -edit 
@@ -1075,38 +1077,62 @@ global proc mm_loadFilesFromFolder() {
 	string $mats[] = mm_getAssignedMaterials();
 	if ( $mats[0] == "" ) { mm_warn("No materials selected."); return; }
 
-	string $location[] = `fileDialog2 -fm 3 -okc "Load From Here"`;
+	string $location[] = `fileDialog2 -fm 3 -okc "Search From Here"`;
 	if ( $location[0] == "" ) { return; }
 
+	string $suffixes[] = { $mm_load_baseColor, $mm_load_normal, $mm_load_specular, $mm_load_metallic, $mm_load_roughness, $mm_load_emissive, $mm_load_opacity, $mm_load_occlusion };
+	string $allFolders[] = mm_getSubFolders($location[0]);
+	//include the original folder
+	stringArrayInsertAtIndex(0, $allFolders, $location[0]);
+
 	//Rebuild folder path with the correct amount of forward slashes
+	/*
 	string $folders[] = mm_split($location[0], "/");
 	string $directory;
 	for ( $folder in $folders ) {
 		$directory = ( $directory + $folder + "//");
 	}
-
 	string $files[] = `getFileList -fld $directory -fs "*.*"`;
 
 	if ( `size $mats` > 1 ) { mm_checkForMultipleMaterials("load", $mats, "color"); return; }
+	*/
 
 	for ( $mat in $mats ) {
-		string $a = ( $directory + mm_findTextureWithSuffix($files, $mm_load_baseColor) );
-		string $n = ( $directory + mm_findTextureWithSuffix($files, $mm_load_normal) );
-		string $s = ( $directory + mm_findTextureWithSuffix($files, $mm_load_specular) );
-		string $m = ( $directory + mm_findTextureWithSuffix($files, $mm_load_metallic) );
-		string $r = ( $directory + mm_findTextureWithSuffix($files, $mm_load_roughness) );
-		string $e = ( $directory + mm_findTextureWithSuffix($files, $mm_load_emissive) );
-		string $o = ( $directory + mm_findTextureWithSuffix($files, $mm_load_opacity) );
-		string $ao = ( $directory + mm_findTextureWithSuffix($files, $mm_load_occlusion) );
+		string $matchMat = $mat;
+		//Remove the M_ prefex so it doesn't produce false negative matches
+		if ( `substring $mat 1 2` == "M_" ) {
+			$matchMat = `substring $mat 3 (size($mat))`;
+		}
+		//This defines an 8-index array containing each of the 8 global strings above, in the order they are listed 
+		string $textures[] = mm_getMatchingTextureFiles($matchMat, $allFolders, $suffixes);
+		//error $textures;
 
-		if ( $a != $directory ) { mm_createFileAndConnect($mat, "color", $a); }
-		if ( $n != $directory ) { mm_createFileAndConnect($mat, "normal", $n); }
-		if ( $s != $directory ) { mm_createFileAndConnect($mat, "specular", $s); }
-		if ( $m != $directory ) { mm_createFileAndConnect($mat, "metallic", $m); }
-		if ( $r != $directory ) { mm_createFileAndConnect($mat, "roughness", $r); }
-		if ( $e != $directory ) { mm_createFileAndConnect($mat, "emissive", $e); }
-		if ( $o != $directory ) { mm_createFileAndConnect($mat, "opacity", $o); }
-		if ( $ao != $directory ) { mm_createFileAndConnect($mat, "occlusion", $o); }
+		if ( $textures[0] != "" ) { mm_createFileAndConnect($mat, "color",		$textures[0]); }
+		if ( $textures[1] != "" ) { mm_createFileAndConnect($mat, "normal",		$textures[1]); }
+		if ( $textures[2] != "" ) { mm_createFileAndConnect($mat, "specular",	$textures[2]); }
+		if ( $textures[3] != "" ) { mm_createFileAndConnect($mat, "metallic",	$textures[3]); }
+		if ( $textures[4] != "" ) { mm_createFileAndConnect($mat, "roughness",	$textures[4]); }
+		if ( $textures[5] != "" ) { mm_createFileAndConnect($mat, "emissive",	$textures[5]); }
+		if ( $textures[6] != "" ) { mm_createFileAndConnect($mat, "opacity",	$textures[6]); }
+		if ( $textures[7] != "" ) { mm_createFileAndConnect($mat, "occlusion",	$textures[7]); }
+
+		// string $a = ( $directory + mm_findTextureWithSuffix($files, $mm_load_baseColor) );
+		// string $n = ( $directory + mm_findTextureWithSuffix($files, $mm_load_normal) );
+		// string $s = ( $directory + mm_findTextureWithSuffix($files, $mm_load_specular) );
+		// string $m = ( $directory + mm_findTextureWithSuffix($files, $mm_load_metallic) );
+		// string $r = ( $directory + mm_findTextureWithSuffix($files, $mm_load_roughness) );
+		// string $e = ( $directory + mm_findTextureWithSuffix($files, $mm_load_emissive) );
+		// string $o = ( $directory + mm_findTextureWithSuffix($files, $mm_load_opacity) );
+		// string $ao = ( $directory + mm_findTextureWithSuffix($files, $mm_load_occlusion) );
+
+		// if ( $a != $directory ) { mm_createFileAndConnect($mat, "color", $a); }
+		// if ( $n != $directory ) { mm_createFileAndConnect($mat, "normal", $n); }
+		// if ( $s != $directory ) { mm_createFileAndConnect($mat, "specular", $s); }
+		// if ( $m != $directory ) { mm_createFileAndConnect($mat, "metallic", $m); }
+		// if ( $r != $directory ) { mm_createFileAndConnect($mat, "roughness", $r); }
+		// if ( $e != $directory ) { mm_createFileAndConnect($mat, "emissive", $e); }
+		// if ( $o != $directory ) { mm_createFileAndConnect($mat, "opacity", $o); }
+		// if ( $ao != $directory ) { mm_createFileAndConnect($mat, "occlusion", $ao); }
 	}
 
 	select $mats[0];
@@ -1326,7 +1352,6 @@ global proc string mm_createShaderAndRename(string $type, string $name) {
 
 
 global proc mm_setStingrayPBSChannel(string $mat, string $path, int $state) {
-	warning $path;
 	if ( mm_has($path, "color") ) { setAttr ($mat + ".use_color_map") $state; }
 	else if ( mm_has($path, "normal") ) { setAttr ($mat + ".use_normal_map") $state; }
 	else if ( mm_has($path, "roughness") ) { setAttr ($mat + ".use_roughness_map") $state; }
@@ -2369,7 +2394,7 @@ global proc int mm_getCurrentTab() {
 }
 
 
-global proc float[] mm_getButtonColor(string $type) {
+global proc float[] mm_getUIColor(string $type) {
 	if ( $type == "blue" ) { return { .115, .357, .5 }; }
 	else if ( $type == "red" ) { return { .8, .2, .2 }; }
 	else if ( $type == "green" ) { return { .2, .8, .2 }; }
@@ -2594,7 +2619,7 @@ global proc float[] mm_getMaterialColor(string $mat) {
 	string $channel = ($mat + ( mm_getValidChannelName($mat, "color") ));
 	float $col[];
 
-	if ( `objExists $channel` ) { 
+	if ( `objExists $channel` && mm_isValidMaterial($mat) ) { 
 		$col = `getAttr $channel`;
 	}
 	else { $col = { 1.0, 0.6, 0.6 }; }
@@ -2719,8 +2744,9 @@ global proc mm_getConfigData() {
 			string $splitVal[] = mm_split($val, ":");
 			string $cmd = ( "global int $" + $splitID[1] + " = " + $splitVal[1] + ";" );
 			//Change the global definition to strings for the texture suffix definitions at the end of the config file
-			//If you add more integer config entries, this number (18) must be increased by that many
-			if ( $l > 18 ) { $cmd = ( "global string $" + $splitID[1] + " = \"" + $splitVal[1] + "\";" ); }
+			//If you add more integer config entries, this number (19) must be increased by that many
+			//Additionally, all string values must come at the very end, with all integer values preceding them
+			if ( $l > 19 ) { $cmd = ( "global string $" + $splitID[1] + " = \"" + $splitVal[1] + "\";" ); }
 			eval $cmd;
 		}
 	}
@@ -2745,15 +2771,16 @@ global proc mm_getConfigData() {
 		string $c15 = "global int $mm_bs_wind = 325; ";
 		string $c16 = "global int $mm_pr_mode = 1; ";
 		string $c17 = "global int $mm_dk_side = 2; ";
-		string $c18 = "global string $mm_load_baseColor = \"_A\"; ";
-		string $c19 = "global string $mm_load_normal = \"_N\"; ";
-		string $c20 = "global string $mm_load_specular = \"_S\"; ";
-		string $c21 = "global string $mm_load_metallic = \"_M\"; ";
-		string $c22 = "global string $mm_load_roughness = \"_R\"; ";
-		string $c23 = "global string $mm_load_emissive = \"_E\"; ";
-		string $c24 = "global string $mm_load_opacity = \"_O\"; ";
-		string $c25 = "global string $mm_load_occlusion = \"_AO\"; ";
-		string $cmd = ( $c00 + $c01 + $c02 + $c03 + $c04 + $c05 + $c06 + $c07 + $c08 + $c09 + $c10 + $c11 + $c12 + $c13 + $c14 + $c15 + $c16 + $c17 + $c18 + $c19 + $c20 + $c21 + $c22 + $c23 + $c24 + $c25 );
+		string $c18 = "global int $mm_cb_matchMat = 1; ";
+		string $c19 = "global string $mm_load_baseColor = \"_A\"; ";
+		string $c20 = "global string $mm_load_normal = \"_N\"; ";
+		string $c21 = "global string $mm_load_specular = \"_S\"; ";
+		string $c22 = "global string $mm_load_metallic = \"_M\"; ";
+		string $c23 = "global string $mm_load_roughness = \"_R\"; ";
+		string $c24 = "global string $mm_load_emissive = \"_E\"; ";
+		string $c25 = "global string $mm_load_opacity = \"_O\"; ";
+		string $c26 = "global string $mm_load_occlusion = \"_AO\"; ";
+		string $cmd = ( $c00 + $c01 + $c02 + $c03 + $c04 + $c05 + $c06 + $c07 + $c08 + $c09 + $c10 + $c11 + $c12 + $c13 + $c14 + $c15 + $c16 + $c17 + $c18 + $c19 + $c20 + $c21 + $c22 + $c23 + $c24 + $c25 + $c26 );
 		mm_warn("mm_config.txt file not found.  Loading backup settings.");
 		eval $cmd;
 	}
@@ -2807,7 +2834,6 @@ global proc string mm_getValidChannelName(string $mat, string $channel) {
 			".TEX_color_map", 
 			".DiffuseTexture",
 			".overallTex", 
-			".inputs[0].color", 
 			".viewportColor",
 			".color", 
 			".surfaceColor", 
@@ -2916,6 +2942,116 @@ global proc string mm_getParent(string $obj) {
 }
 
 
+global proc string[] mm_getSubFolders(string $path) {
+	string $allDirectories[];
+	string $files[] = `getFileList -fld $path`;
+
+	int $maxSubFolders = 500;
+	int $maxFiles = 2000;
+
+	//Initial first pass
+	for ( $obj in $files ) {
+		string $fullPath = ($path + "/" + $obj);
+		if ( size(`getFileList -fld $fullPath`) > 0 ) {
+			$allDirectories = stringArrayCatenate($allDirectories, { $fullPath } ) ;
+		}
+	}
+
+	string $currentDirectories[] = $allDirectories;
+
+	//Find all new
+	int $i;
+	while ( `size $currentDirectories` > 0 ) {
+		//get the file list of all currentDirectories ( the folders present in the current location )
+		string $list[];
+		int $a; // tick the index outside of the loop so it remembers the index it's supposed to recall information from
+		for ( $dir in $currentDirectories ) {
+			$list = stringArrayCatenate( $list, `getFileList -fld $dir` );		
+			if ( `size $list` > $maxFiles ) { 
+				print ( `size $list` + " F\n");
+				mm_warn("Your folder " + $dir + " contains more than " + $maxFiles + " sub-files and folders.  Aborting for performance reasons... Choose a more specific folder."); 
+				return { "-1" };
+			}
+			for ( $a; $a<`size $list`; ++$a ) {
+				$list[$a] = ( $dir + "/" + $list[$a] );
+			}
+		}
+
+		// find the folders that lead to the next sub-directory and add them to a newDirectories list
+		string $newDirectories[];
+		for ( $dir in $list ) {
+			if ( size(`getFileList -fld $dir`) > 0 ) {
+				$newDirectories = stringArrayCatenate($newDirectories, { $dir } ) ;
+			}
+		}
+
+		// add new folder paths to currentDirectories to be processed in the next loop
+		$currentDirectories = stringArrayCatenate( $currentDirectories, $newDirectories );
+		// remove any paths already processed (stored in the main list allDirectories) from current
+		$currentDirectories = stringArrayRemove( $allDirectories, $currentDirectories );
+		// now add what's left over to the main list so it can be removed next pass
+		$allDirectories = stringArrayCatenate( $allDirectories, $currentDirectories );
+		// loop resolves when no new folders are found and allDirectories reduces currentDirectories size to 0
+
+		if ( `size $allDirectories` > $maxSubFolders ) { 
+			print ( `size $allDirectories` + " D\n");
+			eval("warning \"Your folder returned over " + $maxSubFolders + " sub-folders to search.  Aborting for performance reasons... Choose a more specific folder.\";"); 
+			return { "-1" }; 
+		}
+	}
+
+	$allDirectories = sort($allDirectories);
+	return $allDirectories;
+}
+
+
+global proc string[] mm_getMatchingTextureFiles(string $mat, string $subFolders[], string $suffixes[]) {
+	global int $mm_cb_matchMat;
+	string $validExtensions[] = { "jpg", "jpeg", "png", "dds", "tga", "tif", "tiff", "exr", "bmp", "psd" };
+	string $mapLocations[];
+
+	//Run through every folder
+	for ( $folder in $subFolders ) {
+		//List files in current folder
+		string $list[] = `getFileList -fld $folder`;
+		for ( $item in $list ) {
+			//this splits the extension away from the file, this way we can make sure the suffix is appearing at the very end of the file
+			//its possible a folder could have a name that is identical to a file with an extension but there's virtually no chance of that being the case
+			string $split[] = mm_split($item, ".");
+
+			//store the name and format separately so we can make sure the file in question is the correct name and file type
+			string $name;
+			string $format;
+			if ( `size $split` > 1 ) {
+				$name = $split[`size $split`-2];
+				$format = $split[`size $split`-1];
+			}
+
+			//check for a valid extension first, if it doesn't have that obviously it's not worth checking everything else
+			if ( stringArrayContains($format, $validExtensions) ) {
+				//For each file, check for matching material & suffix names
+				for ( $s=0; $s < `size $suffixes`; ++$s ) {
+					string $suffix = $suffixes[$s];
+					if ( mm_has($item, $mat) && mm_has($item, $suffix) == $mm_cb_matchMat ) {
+						//If there's a match, make sure it's not a folder
+						if ( size(`getFileList -fld $item`) == 0 && $name != "" ) {
+							int $nameLen = `size $name`;
+							int $suffixLen = `size $suffix`-1;
+							//finally, if its not a folder, make sure the matched suffix takes places at the very end of the file name to ensure it's actually a suffix
+							if ( `substring $name ( $nameLen - $suffixLen ) $nameLen` == $suffix ) {
+								$mapLocations[$s] = ( $folder + "/" + $item );
+							}
+						}
+					}
+				}						
+			}
+		}
+	}
+
+	return $mapLocations;
+}
+
+
 global proc string mm_promptName(string $mat, string $mode) {
 	global int $mm_cb_appm;
 	string $message;
@@ -2951,7 +3087,7 @@ global proc mm_checkForMultipleMaterials(string $mode, string $mats[], string $c
 	global int $mm_cb_bann;
 	global int $mm_bs_wind;
 	global int $mm_bs_name;
-	float $bgc[] = mm_getButtonColor("dark gray");
+	float $bgc[] = mm_getUIColor("dark gray");
 	int $topOffset = 20;
 	int $pad = 2;
 	mm_deleteUI("mm_window_multiMaterials");
@@ -2989,7 +3125,7 @@ global proc mm_checkForMultipleMaterials(string $mode, string $mats[], string $c
 		mm_form_mats;
 
 	button -e -vis 0 mm_btn_suspend;
-	$bgc = mm_getButtonColor("red");
+	$bgc = mm_getUIColor("red");
 	frameLayout -e -l "Multiple Materials Detected" -bgc $bgc[0] $bgc[1] $bgc[2] mm_tab_main;
 }
 
@@ -3071,7 +3207,7 @@ global proc mm_reportBakerModels(string $field) {
 	else if ( $field == "target" ) { $infoTitle = "Low poly " + $infoTitle; }
 	else { $infoTitle = "Cage " + $infoTitle; }
 	int $pad = 5;
-	float $bgc[] = mm_getButtonColor("near black");
+	float $bgc[] = mm_getUIColor("near black");
 
 	for ( $item in $array ) {
 		$item = (substring($item,2,`size $item`));
@@ -3101,7 +3237,7 @@ global proc mm_reportBakerModels(string $field) {
 		-attachForm		mm_btn_info 		"left"		($mm_bs_wind / 3 - $pad)
 	mm_form_mats;
 
-	$bgc = mm_getButtonColor("blue");
+	$bgc = mm_getUIColor("blue");
 	frameLayout -e -l $infoTitle -bgc $bgc[0] $bgc[1] $bgc[2] mm_tab_main;
 }
 
@@ -3158,14 +3294,14 @@ global proc mm_changeDocking(int $state) {
 global proc mm_updateFrameLayout(int $checkLargeSel) {
 	global string $mm_window;
 	global int $mm_cb_suspend;
-	float $bgc[] = mm_getButtonColor("near black");
+	float $bgc[] = mm_getUIColor("near black");
 
 	if ( ! `window -ex $mm_window` ) { return; }
 
 	if ( ! $mm_cb_suspend ) {
 		string $sel[] = `ls -sl`;
 		if ( `size $sel` > 200 && $checkLargeSel ) {
-			$bgc = mm_getButtonColor("red");
+			$bgc = mm_getUIColor("red");
 			frameLayout -e -l "     Processing Large Selection..." -bgc $bgc[0] $bgc[1] $bgc[2] mm_tab_main;
 		}
 		else { frameLayout -e -l "     Material List" -bgc $bgc[0] $bgc[1] $bgc[2] mm_tab_main; }
@@ -3215,12 +3351,12 @@ global proc mm_updateIndicators() {
 			iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ("ass_" + $mat);
 
 			if ( stringArrayContains($mat, $assigned) ) { 
-				$bgc = mm_getButtonColor("blue");
+				$bgc = mm_getUIColor("blue");
 				iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ( "btn_" + $mat ); 
 				++$onSelCounter;
 			}
 			else { 
-				$bgc = mm_getButtonColor("dark gray");
+				$bgc = mm_getUIColor("dark gray");
 				iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ( "btn_" + $mat ); 
 			}
 		}
@@ -3236,7 +3372,7 @@ global proc mm_updateIndicators() {
 	iconTextButton -e -en $enabled mDelete;
 	iconTextButton -e -en $enabled mRename;	
 
-	float $bgc[] = mm_getButtonColor("near black");
+	float $bgc[] = mm_getUIColor("near black");
 	frameLayout -e -l "     Material List" -bgc $bgc[0] $bgc[1] $bgc[2] mm_tab_main;
 }
 
@@ -3301,11 +3437,11 @@ global proc mm_updateNameplates() {
 	for ( $mat in $mats ) {
 		string $btn = ( "btn_" + $mat );
 		if ( `iconTextButton -ex $btn` && mm_isMaterialOnSelection($mat) ) { 
-			float $bgc[] = mm_getButtonColor("blue");
+			float $bgc[] = mm_getUIColor("blue");
 			iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] $btn; 
 		}
 		else { 
-			float $bgc[] = mm_getButtonColor("dark gray");
+			float $bgc[] = mm_getUIColor("dark gray");
 			iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] $btn; 
 		}
 	}
@@ -3394,11 +3530,11 @@ global proc mm_updateBanner() {
 global proc mm_updateSearchField() {
 	if ( `textField -ex mm_searchField` ) {
 		if ( `textField -q -tx mm_searchField` != "" ) {
-			float $bgc[] = mm_getButtonColor("yellow");
+			float $bgc[] = mm_getUIColor("yellow");
 			textField -e -bgc $bgc[0] $bgc[1] $bgc[2] mm_searchField;
 		}
 		else {
-			float $bgc[] = mm_getButtonColor("dark gray");
+			float $bgc[] = mm_getUIColor("dark gray");
 			textField -e -bgc $bgc[0] $bgc[1] $bgc[2] mm_searchField;
 		}
 	}
@@ -3433,6 +3569,7 @@ global proc mm_updateCB() {
 	global int $mm_cb_appm;
 	global int $mm_pr_mode;
 	global int $mm_rb_crono;
+	global int $mm_cb_matchMat;
 	$mm_rb_crono = `menuItem -q -rb menuSortChrono`;
 	//Just to make sure, in case both were turned off somehow
 	$mm_rb_crono = (1-`menuItem -q -rb menuSortAlpha`);
@@ -3450,6 +3587,12 @@ global proc mm_updateCB() {
 	$mm_cb_appm = `menuItem -q -cb "menuBonusAppendPrefix"`;
 
 	menuItem -e -en $mm_cb_sass menuSortScrollToTop;
+
+	//Update Match Material Name checkbox (for auto-load from folder)
+	if ( `checkBox -ex mm_cb_match` ) {
+		$mm_cb_matchMat = `checkBox -q -v mm_cb_match`;
+	}
+
 }
 
 
@@ -3489,7 +3632,7 @@ global proc mm_suspendIndicators() {
 	global int $mm_cb_suspend;
 	float $col[] = `button -q -bgc mm_btn_suspend`;
 	if ( $col[0] != 1.0 ) {
-		float $bgc[] = mm_getButtonColor("orange");
+		float $bgc[] = mm_getUIColor("orange");
 		button -e -l "||" -bgc $bgc[0] $bgc[1] $bgc[2] mm_btn_suspend;
 		$mm_cb_suspend = 1;
 
@@ -3500,7 +3643,7 @@ global proc mm_suspendIndicators() {
 		}
 	}
 	else {
-		float $bgc[] = mm_getButtonColor("blue");
+		float $bgc[] = mm_getUIColor("blue");
 		button -e -l "" -bgc $bgc[0] $bgc[1] $bgc[2] mm_btn_suspend;
 		$mm_cb_suspend = 0;
 		mm_updateFrameLayout(1);
@@ -3573,7 +3716,7 @@ global proc int mm_isValidMaterial(string $mat) {
 	//every single time.  If I wanted to make this a global database I could include it up at the very top as part of the initialization
 	//code (Line 5) where I also have mm_getConfigData()
 	
-	string $types[] = { "oceanShader", "rampShader", "fluidShape", "phong", "phongE", "blinn", "anisotropic", "useBackground", "hairTubeShader", "layeredShader", "surfaceShader", "shadingMap" };
+	string $types[] = { "oceanShader", "fluidShape", "phong", "phongE", "blinn", "anisotropic", "useBackground", "hairTubeShader", "layeredShader", "surfaceShader", "shadingMap" };
 	if ( ! mm_isMayaLT() ) { $types = stringArrayCatenate($types, { "lambert" }); }
 	//Add more material types here if there are other plugins you use
 	if ( `pluginInfo -q -l "cgfxShader.mll"` ) { $types = stringArrayCatenate($types, { "cgfxShader" }); }
@@ -3889,7 +4032,7 @@ global proc mm_bk_autoID() {
 			$allSelections[`size $allSelections`] = $face;
 			++$index;
 			++$kill;
-			if ( $kill > 5000 ) { warning "Something went wrong and I was forced to stop... Or you have more than 5000 mesh elements."; break; }
+			if ( $kill > 5000 ) { mm_warn("Something went wrong and I was forced to stop... Or you have more than 5000 mesh elements."); break; }
 			if ( $index >= $listSize ) { $index = 0; }
 		}
 
@@ -4037,11 +4180,11 @@ global proc mm_bk_checkButtonState() {
 	string $lp = `textField -q -tx field_bake_target`;
 	string $fp = `textField -q -tx field_bake_path`;
 	if ( $hp != "" && $lp != "" && $fp != "") {
-		float $bgc[] = mm_getButtonColor("blue");
+		float $bgc[] = mm_getUIColor("blue");
 		button -e -en 1 -bgc $bgc[0] $bgc[1] $bgc[2] btn_bake_bake;
 	}
 	else { 
-		float $bgc[] = mm_getButtonColor(".5");
+		float $bgc[] = mm_getUIColor(".5");
 		button -e -en 0 -bgc $bgc[0] $bgc[1] $bgc[2] btn_bake_bake; 
 	}
 
@@ -4229,15 +4372,12 @@ global proc mm_info(int $index) {
 	string $infoText = $infoTextTable[$index];
 	int $pad = 5;
 
-	//This section automatically counts where the first URL is in the array.  as menu info buttons are added, the first URL's index will change
-	//and I got tired of manually adjusting the index number below.
-	string $allText = stringArrayToString( $infoTextTable, "`");
-	string $split[] = mm_split($allText, "9");
-	string $counter[] = mm_split($split[0], "`");
-	int $urlIndex = `size $counter` - 2;
+	//this number defines the starting point in the above table for where URLs start so they can be automatically opened in a browser.
+	//this number must be adjusted as more menu options are added
+	int $urlIndex = 14;
 	//Open URLs in a web browser automatically.  The applicable index is subject to change if new menu items are added behind this index.
 	if ( $index > $urlIndex && ! mm_isMayaLT() && ! `about -mac` ) {
-		print `size $counter`;;
+		//print `size $counter`;;
 		// Directly open the link if not Maya LT (LT does not allow use of `system`)
 		string $cmd = ( "system \"start explorer " + $infoText + "\";" );
 		eval( $cmd );
@@ -4254,7 +4394,7 @@ global proc mm_info(int $index) {
 
 
 	scrollField -wordWrap true -text $infoText -editable 0 mm_scrollfield_info;
- 	float $bgc[] = mm_getButtonColor("near black");
+ 	float $bgc[] = mm_getUIColor("near black");
  	iconTextButton -style "iconAndTextCentered" -l "OK" -w ( $mm_bs_wind/3 ) -h 20 -bgc $bgc[0] $bgc[1] $bgc[2] -c "mm_clearInfo();" mm_btn_info;
 
 	formLayout -edit
@@ -4266,14 +4406,14 @@ global proc mm_info(int $index) {
 		-attachForm		mm_btn_info 		"left"		($mm_bs_wind / 3 - $pad)
 	mm_form_mats;
 
-	$bgc = mm_getButtonColor("blue");
-	if ( mm_has($infoTitle, "Warning") ) { $bgc = mm_getButtonColor("red"); }
+	$bgc = mm_getUIColor("blue");
+	if ( mm_has($infoTitle, "Warning") ) { $bgc = mm_getUIColor("red"); }
 	frameLayout -e -l $infoTitle -bgc $bgc[0] $bgc[1] $bgc[2] mm_tab_main;
 }
 
 
 global proc mm_clearInfo() {
-	float $bgc[] = mm_getButtonColor("near black");
+	float $bgc[] = mm_getUIColor("near black");
 
 	deleteUI "mm_form_mats"; 
 	frameLayout -e -l "     Materials Loaded in Scene" -bgc $bgc[0] $bgc[1] $bgc[2] mm_tab_main;
@@ -4293,8 +4433,11 @@ global proc mm_loadFilesHelp() {
 	global string $mm_load_roughness;
 	global string $mm_load_emissive;
 	global string $mm_load_opacity;
+	global string $mm_load_occlusion;
+	global int $mm_cb_matchMat;
 
 	int $pad = 5;
+	int $gap = 0;
 	int $bottom = 75;
 	int $left = ($mm_bs_wind - 200)/2;
 
@@ -4307,19 +4450,23 @@ global proc mm_loadFilesHelp() {
 		-h (`scrollLayout -q -h mm_scroll_main`-8)
 		mm_form_mats;
 
-	scrollField -wordWrap true -bgc .2 .2 .2 -text "This tool will automatically load any texture files from a chosen directory to the appropriate channels.\n\nEdit mm_config.txt to permanently save custom suffixes." -editable 0 mm_scrollfield_info;
 
-	textFieldGrp -cw 2 40 -cw 1 55 -l "baseColor" -tx $mm_load_baseColor mm_txt_loadFolder_a;
+	scrollField -wordWrap true -bgc .2 .2 .2 -text "This tool automatically finds & assigns texture files inside a chosen directory.\n\nEdit mm_config.txt to permanently save custom suffixes." -editable 0 mm_scrollfield_info;
+
+	textFieldGrp -cw 2 40 -cw 1 55 -l "baseColor" -tx $mm_load_baseColor mm_txt_loadFolder_bc;
 	textFieldGrp -cw 2 40 -cw 1 55 -l "normal" -tx $mm_load_normal mm_txt_loadFolder_n;
 	textFieldGrp -cw 2 40 -cw 1 55 -l "specular" -tx $mm_load_specular mm_txt_loadFolder_s;
 	textFieldGrp -cw 2 40 -cw 1 55 -l "metallic" -tx $mm_load_metallic mm_txt_loadFolder_m;
 	textFieldGrp -cw 2 40 -cw 1 55 -l "roughness" -tx $mm_load_roughness mm_txt_loadFolder_r;
 	textFieldGrp -cw 2 40 -cw 1 55 -l "emissive" -tx $mm_load_emissive mm_txt_loadFolder_e;
 	textFieldGrp -cw 2 40 -cw 1 55 -l "opacity" -tx $mm_load_opacity mm_txt_loadFolder_o;
+	textFieldGrp -cw 2 40 -cw 1 55 -l "occlusion" -tx $mm_load_occlusion mm_txt_loadFolder_ao;
+	checkBox -l "" -v $mm_cb_matchMat -onc "mm_updateCB()" -ofc "mm_updateCB()" mm_cb_match;
+	text -l "Match File to\nMaterial Name" -align "right" mm_txt_match;
 
-	float $bgc[] = mm_getButtonColor("green");
+	float $bgc[] = mm_getUIColor("green");
  	iconTextButton -style "iconAndTextCentered" -l "Update for this Session" -w ( $mm_bs_wind/2 + 10 ) -h 20 -bgc $bgc[0] $bgc[1] $bgc[2] -c "mm_updateAutoLoadSuffixes();" mm_btn_loadFolder_update;
-	$bgc = mm_getButtonColor("near black");
+	$bgc = mm_getUIColor("near black");
  	iconTextButton -style "iconAndTextCentered" -l "Return" -w ( $mm_bs_wind/3 ) -h 20 -bgc $bgc[0] $bgc[1] $bgc[2] -c "mm_clearInfo();" mm_btn_loadFolder_return;
 
 	formLayout -edit
@@ -4332,26 +4479,33 @@ global proc mm_loadFilesHelp() {
 		-attachForm		mm_btn_loadFolder_return 	"right"		15
 		-attachForm		mm_btn_loadFolder_return 	"bottom"	$pad
 
-		-attachForm 	mm_txt_loadFolder_a 		"bottom"	80
-		-attachForm 	mm_txt_loadFolder_a 		"left" 		$pad
-		-attachForm 	mm_txt_loadFolder_n 		"bottom"	80
-		-attachForm 	mm_txt_loadFolder_n 		"left" 		110
-		-attachForm 	mm_txt_loadFolder_s 		"bottom"	80
-		-attachForm 	mm_txt_loadFolder_s 		"left" 		210
-
-		-attachForm 	mm_txt_loadFolder_m 		"bottom"	60
+		-attachForm 	mm_txt_loadFolder_bc 		"bottom"	90
+		-attachForm 	mm_txt_loadFolder_bc 		"left" 		$pad
+		-attachControl 	mm_txt_loadFolder_m 		"top"		$gap	mm_txt_loadFolder_bc
 		-attachForm 	mm_txt_loadFolder_m 		"left" 		$pad
-		-attachForm 	mm_txt_loadFolder_r 		"bottom"	60
-		-attachForm 	mm_txt_loadFolder_r 		"left" 		110
-
-		-attachForm 	mm_txt_loadFolder_e 		"bottom"	40
+		-attachControl 	mm_txt_loadFolder_e 		"top"		$gap 	mm_txt_loadFolder_m
 		-attachForm 	mm_txt_loadFolder_e 		"left" 		$pad
-		-attachForm 	mm_txt_loadFolder_o 		"bottom"	40
+
+		-attachForm 	mm_txt_loadFolder_n 		"bottom"	90
+		-attachForm 	mm_txt_loadFolder_n 		"left" 		110
+		-attachControl 	mm_txt_loadFolder_r 		"top"		$gap 	mm_txt_loadFolder_n
+		-attachForm 	mm_txt_loadFolder_r 		"left" 		110
+		-attachControl 	mm_txt_loadFolder_o 		"top"		$gap 	mm_txt_loadFolder_r
 		-attachForm 	mm_txt_loadFolder_o 		"left" 		110
+
+		-attachForm 	mm_txt_loadFolder_s 		"bottom"	90
+		-attachForm 	mm_txt_loadFolder_s 		"left" 		210
+		-attachControl 	mm_txt_loadFolder_ao 		"top"		$gap 	mm_txt_loadFolder_s
+		-attachForm 	mm_txt_loadFolder_ao 		"left" 		210
+		-attachControl 	mm_cb_match 		 		"top"		12 		mm_txt_loadFolder_ao
+		-attachForm 	mm_cb_match 		 		"left" 		293
+		-attachControl 	mm_txt_match 		 		"top"		5 		mm_txt_loadFolder_ao
+		-attachForm 	mm_txt_match 		 		"left" 		215
+
 
 	mm_form_mats;
 
-	$bgc = mm_getButtonColor("blue");
+	$bgc = mm_getUIColor("blue");
 	frameLayout -e -l "Info: Load Files from Folder Tool" -bgc $bgc[0] $bgc[1] $bgc[2] mm_tab_main;
 }
 
@@ -4364,7 +4518,7 @@ global proc mm_updateAutoLoadSuffixes() {
 	global string $mm_load_roughness;
 	global string $mm_load_emissive;
 	global string $mm_load_opacity;
-	$mm_load_baseColor = `textFieldGrp -q -tx mm_txt_loadFolder_a`;
+	$mm_load_baseColor = `textFieldGrp -q -tx mm_txt_loadFolder_bc`;
 	$mm_load_normal = `textFieldGrp -q -tx mm_txt_loadFolder_n`;
 	$mm_load_specular = `textFieldGrp -q -tx mm_txt_loadFolder_s`;
 	$mm_load_metallic = `textFieldGrp -q -tx mm_txt_loadFolder_m`;
@@ -4390,7 +4544,7 @@ global proc mm_bindHotkeyWindow() {
 		-h (`scrollLayout -q -h mm_scroll_main`-8)
 		mm_form_mats;
 
-	float $bgc[] = mm_getButtonColor("dark gray");
+	float $bgc[] = mm_getUIColor("dark gray");
 	scrollField -wordWrap true -text "Set a hotkey to toggle the Material Manager open and closed.\n\nNote:  Binding this hotkey is NOT undoable!\n\nRecommended key: m" -editable 0 mm_scrollfield_info;
 	checkBox -l "" -v 0 -bgc $bgc[0] $bgc[1] $bgc[2] mm_cb_hotkey_ctrl;
 	text -l "Ctrl" mm_text_hotkey_ctrl;
@@ -4399,11 +4553,11 @@ global proc mm_bindHotkeyWindow() {
 	checkBox -l "" -v 0 -bgc $bgc[0] $bgc[1] $bgc[2] mm_cb_hotkey_shift;
 	text -l "Shift" mm_text_hotkey_shift;
 
-	$bgc = mm_getButtonColor("near black");
+	$bgc = mm_getUIColor("near black");
 	textField -tx "m" -bgc $bgc[0] $bgc[1] $bgc[2] -rfc "textField -e -tx \"\" mm_field_hotkey_key;" mm_field_hotkey_key;
  	iconTextButton -style "iconAndTextCentered" -l "Cancel" -w ( $mm_bs_wind/3 ) -h 20 -bgc $bgc[0] $bgc[1] $bgc[2] -c "mm_clearInfo();" mm_btn_hotkey_cancel;
 
- 	$bgc = mm_getButtonColor("green");
+ 	$bgc = mm_getUIColor("green");
  	iconTextButton -style "iconAndTextCentered" -l "Bind It" -w ( $mm_bs_wind/3 ) -h 20 -bgc $bgc[0] $bgc[1] $bgc[2] -c "mm_bindHotkey();" mm_btn_hotkey_bind;
 
 	if ( mm_getVersion() >= 2016 ) {
@@ -4447,7 +4601,7 @@ global proc mm_bindHotkeyWindow() {
 		-attachForm 	mm_option_hotkeySet 	"right"	 	( ( $mm_bs_wind - 250 ) / 2 )
 	mm_form_mats;
 
-	$bgc = mm_getButtonColor("red");
+	$bgc = mm_getUIColor("red");
 	frameLayout -e -l "Bind Hotkey" -bgc $bgc[0] $bgc[1] $bgc[2] mm_tab_main;
 }
 
