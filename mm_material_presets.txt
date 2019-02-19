@@ -10,7 +10,7 @@
 //    7)  Material Names CANNOT have spaces.
 //    8)  Decimals beyond 6 places will be rounded off.
 //    9)  Do not add any information between the last swatch entry and the //Material Presets line.
-//	  10) Material Types are case sensitive.  You will get an "invalid or unsupported" warning if the Material Type isn't exact.
+//	  10) Material Types are case sensitive.  You will get an invalid or unsupported warning if the Material Type isn't exact.
 //
 //
 //  Valid material names list:
@@ -40,6 +40,13 @@
 //						aiStandardSurface	aiCurvature 				aiMixShader				aiStandardHair		aiRaySwitch
 //						aiStandard 			aiUtility 					aiShadowMatte			aiSkin 				aiThinFilm
 //						aiWireframe			aiFlat 																	aiTwoSided
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  VRAY: 				VRayAISurface 		VRayFlakesMtl  				VRayMtlGLSL 			VRayMtlWrapper 			VRayStochasticFlakesMtl 	VRayScatterFog 
+//						VRayBlendMtl 		VRayLightMtl 				VRayMtlHair3 			VRayPointParticleMtl 	VRaySwitchMtl 				VRaySimpleFog 
+//						VRayBumpMtl 		VRayMeshMaterial 			VRayMtlMDL 				VRayScannedMtl 			VRayVRmatMtl 				VRaySphereFadeVolume
+//						VRayCarPaintMtl 	VRayMtl 					VRayMtlOSL 				VRaySimbiont 			VRayAerialPerspective 
+//						VRayFastSSS2 		VRayMtl2Sided 				VRayMtlRenderStats 		VRaySkinMtl 			VRayEnvironmentFog 
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //

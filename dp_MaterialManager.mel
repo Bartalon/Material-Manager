@@ -1,5 +1,5 @@
-global string $mm_Version = "5.0.7";
-global string $mm_Release = "4 April 2018";
+global string $mm_Version = "5.0.8";
+global string $mm_Release = "29 April 2018";
 global int $mm_scriptJob;
 
 if ( $mm_scriptJob == 0 ) {
@@ -38,7 +38,7 @@ global proc materialManager() {
 
 	if ( ! $mm_cb_suspend ) {
 		string $sel[] = `ls -fl -sl`;
-		if ( `size $sel` > 1000 ) { print "Opening Material Manager with a large selection, this may take a few seconds.\n"; }
+		if ( `size $sel` > 1000 || `size (ls("-mat"))` > 100 ) { print "Opening Material Manager with a large selection or material count.  This may take a few seconds.\n"; }
 	}
 
 	window -t $title -toolbox 1 -minimizeButton 1 -maximizeButton 0 -menuBar 1 -rtf 1 $mm_window;
@@ -79,7 +79,10 @@ global proc materialManager() {
 		mm_bk_checkButtonState();
 	}
 	mm_updateHandedness();
-	//mm_updateIndicators();
+	
+	if ( ! $mm_cb_suspend ) {
+		mm_updateIndicators();
+	}
 
 	setFocus $mm_window;
 	print ( "Material Manager v" + $mm_Version + "\n" );
@@ -104,6 +107,7 @@ global proc mm_build_menuItems() {
 	global int $mm_cb_inst;
 	global int $mm_cb_cind;
 	global int $mm_cb_find;
+	global int $mm_cb_suspend;
 	global int $mm_cb_appm;
 	global int $mm_dk_side;
 
@@ -177,6 +181,8 @@ global proc mm_build_menuItems() {
 	"C",	$mm_cb_snap,		"Sort Assigned: Snap to top with one material",	$mm_s_snap,		"mm_updateCB();",
 	"", 	"",					"divider",										"",				"",										
 	"C", 	$mm_cb_bann, 		"Sort Presets by Columns",						$mm_s_spre,		"mm_updateCB(); mm_build_tab_presets()",
+	"", 	"",					"divider",										"",				"",
+	"C",	$mm_cb_suspend, 	"Suspend Material List Updating", 				"",				"mm_updateCB(); mm_suspendIndicators();",
 	"", 	"",					"divider",										"",				"",
 	"I",	"",					"Clear all material Markers",					"mm_info(7)",	"mm_clearMarkers()",
 	"", 	"",					"Reset All Sorting and Search Filters",			"",				"mm_resetSorting()",
@@ -400,7 +406,7 @@ global proc mm_build_materialControl() {
 		//iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_Refresh -c "mm_build_tab_main()" -ann "Refresh material list" mRefresh;
 		iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_duplicate -c "mm_duplicateMaterial()" -ann "Duplicate marked materials" mDuplicate;
 		iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_Match -c "mm_matchMaterial()" -ann "Select objects/polygons to which marked materials are assigned" mMatch;
-		iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_Rename -c "mm_renameMaterial()" -ann "Rename marked materials" mRename;
+		iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_Rename -c "mm_renameMaterial()" -ann "Rename marked, assigned, or selected materials" mRename;
 		iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_Delete -c "mm_deleteMaterial()" -ann "Delete marked materials & all connected utilities/textures" mDelete;
 
 	formLayout -edit 
@@ -458,7 +464,7 @@ global proc mm_build_channelControl() {
 		"btn_cc_emissive_r",	$mm_i_remove,		"mm_deleteChannel(\"emissive\")",		"Delete emissive map",
 		"btn_cc_opacity_a",		$mm_i_opacity,		"mm_assignChannel(\"transparency\")",	"Assign a transparency map",
 		"btn_cc_opacity_r",		$mm_i_remove,		"mm_deleteChannel(\"transparency\")",	"Delete transparency map",
-		"btn_cc_roughness_a",	$mm_i_roughness,	"mm_assignChannel(\"roughness\")",		"Assign a roughness map",
+		"btn_cc_roughness_a",	$mm_i_roughness,	"mm_assignChannel(\"roughness\")",		"Assign a roughness (or gloss) map",
 		"btn_cc_roughness_r",	$mm_i_remove,		"mm_deleteChannel(\"roughness\")",		"Delete roughness map",
 		"btn_cc_metallic_a",	$mm_i_metallic,		"mm_assignChannel(\"metallic\")",		"Assign a metallic map",
 		"btn_cc_metallic_r",	$mm_i_remove,		"mm_deleteChannel(\"metallic\")",		"Delete metallic map",
@@ -641,8 +647,12 @@ global proc mm_build_tab_main() {
 	string $mm_i_assign = "MaterialManager/mm_assign.png";
 	string $sel[] = `ls -l -sl`;
 	string $mats[] = mm_getFilteredMaterials();
-
-	if ( ! $mm_cb_suspend ) { 
+	//use lambert1 only if tab is being rebuilt when suspended
+	if ( $mm_cb_suspend ) { 
+		clear $mats;
+		$mats[0] = mm_getStartingSG();
+	}
+	else {
 		//Sorting selected to top, if option is activated
 		if ( $mm_cb_sass ) {
 			string $intersectMaterials[] = stringArrayRemove($mm_assigned, $mats);
@@ -658,6 +668,7 @@ global proc mm_build_tab_main() {
 	int $formWidth = $mm_bs_wind - 20;
 	if ( mm_getVersion() < 2016 ) { $formWidth = $mm_bs_wind - 24; }
 	float $bgc[] = mm_getButtonColor("dark gray");
+	float $col[];
 
 	mm_deleteUI("mm_form_mats");
 
@@ -672,16 +683,21 @@ global proc mm_build_tab_main() {
 			string $ann_cb = ( "Mark/Unmark " + $mat + ".  Hold shift to mark a range of materials.  Ctrl click to clear." );
 			int $cb_val = stringArrayContains($mat, $mm_markers);
 
+
 			if ( $mm_cb_suspend ) { $bgc = { 1.0, 0.5, 0.0 }; }
 			else if ( stringArrayContains($mat, $mm_assigned) ) { 
 				$bgc = { .115, .357, .5 }; 
 				++$onSelCounter;
 			}
 			else { $bgc = { .2, .2, .2 }; };
+
 			iconTextButton -style "iconAndTextCentered" -al "left" -l ("  " + $mat) -bgc $bgc[0] $bgc[1] $bgc[2] -h $mm_bs_name -c ("mm_selectMaterial(\"" + $mat + "\");") -ann $ann_btn $btn;
 			checkBox -l "" -cc ("mm_setMarkerRange(\"" + $mat + "\")") -v $cb_val -w $mm_bs_name -h $mm_bs_name -ann $ann_cb $cb;
 
-			float $col[] = mm_getMaterialColor($mat);
+			if ( $mm_cb_suspend ) { $col = { 1.0, 0.5, 0.0 }; }
+			else if ( `size $mats` > 100 ) { $col = { 0.5, 0.5, 0.5 }; }
+			else { $col = mm_getMaterialColor($mat); }
+
 			iconTextButton -style "iconOnly" -i $mm_i_assign -h $mm_bs_name -w $mm_bs_name -bgc $col[0] $col[1] $col[2] -c ("mm_assignMaterial(\"" + $mat + "\");") -ann $ann_ass $ass;
 
 			formLayout -edit 
@@ -1371,9 +1387,6 @@ global proc mm_deleteMaterial() {
 	string $SGs[];
 	string $connections[];
 
-	warning $mats;
-	warning $mm_assigned;
-
 	//Compare what is marked for deletion to what is on the model.  If exactly identical, prompt user
 	if ( `size $mats` == `size $mm_assigned` && `size $mats` > 1 ) {
 		int $identical = 1;
@@ -1770,7 +1783,9 @@ global proc mm_createCustomMaterial() {
 	string $lambert1 = mm_getStartingSG();
 	string $sel[] = `ls -l -sl`;
 	source doCreateAssignNewMaterialTreeLister.mel;
-	createAssignNewMaterialTreeLister $lambert1; 
+
+	if ( $sel[0] == "" ) { createAssignNewMaterialTreeLister $lambert1; }
+	else { createAssignNewMaterialTreeLister ""; }
 
 	scriptJob -p assignNewMaterialWindow -e RebuildUIValues "if (!`window -q -vis assignNewMaterialWindow`) { mm_deleteUI(\"assignNewMaterialWindow\"); }";
 }
@@ -2387,7 +2402,6 @@ global proc string[] mm_getFilteredMaterials() {
 		}
 
 		//Store presets which will be what is filtered later
-		++$i;
 		for ( $i; $i<`size $presets`/9; ++$i ) {
 			int $name = $i * 9;
 			$mats[`size $mats`] = $presets[$name];
@@ -2601,10 +2615,10 @@ global proc mm_getConfigData() {
 	string $path = `internalVar -userScriptDir`;
 	$path = ( substring($path, 1, `size $path`-8) + "prefs/scripts/" );
 	$path = ( $path + "mm_config.txt" );
-
 	int $fileID;
 	catchQuiet($fileID = `fopen $path "r"`);
 	string $data;
+
 	if ( $fileID != 0 ) {
 		while (!feof($fileID) ) {
 			$data += `fgetline $fileID`;
@@ -2630,10 +2644,12 @@ global proc mm_getConfigData() {
 			string $splitVal[] = mm_split($val, ":");
 			string $cmd = ( "global int $" + $splitID[1] + " = " + $splitVal[1] + ";" );
 			//Change the global definition to strings for the texture suffix definitions at the end of the config file
-			if ( $l > 16 ) { $cmd = ( "global string $" + $splitID[1] + " = \"" + $splitVal[1] + "\";" ); }
+			//If you add more integer config entries, this number (17) must be increased by that many
+			if ( $l > 17 ) { $cmd = ( "global string $" + $splitID[1] + " = \"" + $splitVal[1] + "\";" ); }
 			eval $cmd;
 		}
 	}
+
 	else {
 		//This sequence of strings has been set up as an alternative to escaped line breaks within a string, a method that creates an error on Mac OS.
 		string $c00 = "global int $mm_rb_crono = 0; ";
@@ -2646,21 +2662,22 @@ global proc mm_getConfigData() {
 		string $c07 = "global int $mm_cb_cind = 1; ";
 		string $c08 = "global int $mm_cb_find = 0; ";
 		string $c09 = "global int $mm_cb_appm = 1; ";
-		string $c10 = "global int $mm_bk_width = 2048; ";
-		string $c11 = "global int $mm_bk_height = 2048; ";
-		string $c12 = "global int $mm_bk_dilation = 16; ";
-		string $c13 = "global int $mm_bs_name = 25; ";
-		string $c14 = "global int $mm_bs_wind = 325; ";
-		string $c15 = "global int $mm_pr_mode = 1; ";
-		string $c16 = "global int $mm_dk_side = 2; ";
-		string $c17 = "global string $mm_load_baseColor = \"_A\"; ";
-		string $c18 = "global string $mm_load_normal = \"_N\"; ";
-		string $c19 = "global string $mm_load_specular = \"_S\"; ";
-		string $c20 = "global string $mm_load_metallic = \"_M\"; ";
-		string $c21 = "global string $mm_load_roughness = \"_R\"; ";
-		string $c22 = "global string $mm_load_emissive = \"_E\"; ";
-		string $c23 = "global string $mm_load_opacity = \"_O\"; ";
-		string $cmd = ( $c00 + $c01 + $c02 + $c03 + $c04 + $c05 + $c06 + $c07 + $c08 + $c09 + $c10 + $c11 + $c12 + $c13 + $c14 + $c15 + $c16 + $c17 + $c18 + $c19 + $c20 + $c21 + $c22 + $c23 );
+		string $c10 = "global int $mm_cb_suspend = 0; ";
+		string $c11 = "global int $mm_bk_width = 2048; ";
+		string $c12 = "global int $mm_bk_height = 2048; ";
+		string $c13 = "global int $mm_bk_dilation = 16; ";
+		string $c14 = "global int $mm_bs_name = 25; ";
+		string $c15 = "global int $mm_bs_wind = 325; ";
+		string $c16 = "global int $mm_pr_mode = 1; ";
+		string $c17 = "global int $mm_dk_side = 2; ";
+		string $c18 = "global string $mm_load_baseColor = \"_A\"; ";
+		string $c19 = "global string $mm_load_normal = \"_N\"; ";
+		string $c20 = "global string $mm_load_specular = \"_S\"; ";
+		string $c21 = "global string $mm_load_metallic = \"_M\"; ";
+		string $c22 = "global string $mm_load_roughness = \"_R\"; ";
+		string $c23 = "global string $mm_load_emissive = \"_E\"; ";
+		string $c24 = "global string $mm_load_opacity = \"_O\"; ";
+		string $cmd = ( $c00 + $c01 + $c02 + $c03 + $c04 + $c05 + $c06 + $c07 + $c08 + $c09 + $c10 + $c11 + $c12 + $c13 + $c14 + $c15 + $c16 + $c17 + $c18 + $c19 + $c20 + $c21 + $c22 + $c23 + $c24 );
 		mm_warn("mm_config.txt file not found.  Loading backup settings.");
 		eval $cmd;
 	}
@@ -2704,15 +2721,93 @@ global proc string[] mm_getPresetsData() {
 
 global proc string mm_getValidChannelName(string $mat, string $channel) {
 	string $channels[];
+
+	//These channels are checked when using the Channel Control buttons to assign the
 	//Some materials have more than one of these channels so they are ordered from most relevant to least relevant
-	if ( $channel == "color" ) { $channels = { ".TEX_color_map", ".inputs[0].color", ".color", ".surfaceColor", ".diffuse", ".diffuseColor", ".outColor", ".miColor", ".hardwareColor" }; }
-	else if ( $channel == "normal" ) { $channels = { ".TEX_normal_map", ".normalCamera", ".normalMap", ".miNormalCamera" }; }
-	else if ( $channel == "roughness" ) { $channels = { ".TEX_roughness_map", ".diffuseRoughness" }; }
+
+	//Color
+	if ( $channel == "color" ) { 
+		$channels = { 
+			".TEX_color_map", 
+			".overallTex", 
+			".inputs[0].color", 
+			".viewportColor",
+			".color", 
+			".surfaceColor", 
+			".diffuse", 
+			".diffuseColor", 
+			".outColor", 
+			".miColor", 
+			".hardwareColor" 
+		}; 
+	}
+
+	//Normal
+	else if ( $channel == "normal" ) { 
+		$channels = { 
+			".TEX_normal_map", 
+			".base_bumpMap", 
+			".normalCamera", 
+			".normalMap", 
+			".miNormalCamera", 
+			".bumpMap"
+		}; 
+	}
+
+	//Roughness
+	else if ( $channel == "roughness" ) { 
+		$channels = { 
+			".TEX_roughness_map",
+			".base_glossiness", 
+			".primaryGlossiness",
+			".diffuseRoughness" 
+		}; 
+	}
+
+	//Metallic
 	else if ( $channel == "metallic" ) { $channels = { ".TEX_metallic_map" }; }
-	else if ( $channel == "specular" ) { $channels = { ".specularColor", ".KsColor", ".miSpecularColor", ".reflectivity" }; }
-	else if ( $channel == "emissive" ) { $channels = { ".TEX_emissive_map", ".incandescence", ".emissionColor" }; }
-	else if ( $channel == "transparency" ) { $channels = { ".inputs[0].transparency", ".transparency", /* ".outTransparency", */ ".miTransparency" }; }
+
+	//Specular
+	else if ( $channel == "specular" ) { 
+		$channels = { 
+			".specularColor", 
+			".primarySpecular", 
+			".KsColor", 
+			".miSpecularColor", 
+			".reflection", 
+			".reflectionColor", 
+			".primaryReflectionColor", 
+			".reflectivity" 
+		}; 
+	}
+
+	//Emissive
+	else if ( $channel == "emissive" ) { 
+		$channels = { 
+			".TEX_emissive_map", 
+			".illumColor", 
+			".incandescence", 
+			".emission", 
+			".emissionColor" 
+		}; 
+	}
+
+	//Transparency
+	else if ( $channel == "transparency" ) { 
+		$channels = { 
+			".inputs[0].transparency", 
+			".transparency", 
+			".transparencyColor",
+			".miTransparency",
+			".opacity", 
+			".opacityMap"
+			//".outTransparency"
+		}; 
+	}
+
+	//Occlusion
 	else if ( $channel == "occlusion" ) { $channels = { "TEX_ao_map" }; }
+
 
 	for ( $index in $channels ) {
 		if ( `objExists ($mat + $index)` ) {
@@ -2996,39 +3091,35 @@ global proc mm_updateIndicators() {
 	global string $mm_markers[];
 	global int $mm_cb_sass;
 	global int $mm_cb_suspend;
+	global string $mm_assigned[];
+	string $lambert1 = mm_getStartingSG();
+	$mm_assigned = mm_getAssignedMaterials();
 
 	//If material list is suspended, skip everything except updating the frameLayout
+	int $enabled = 1;
 	if ( ! $mm_cb_suspend ) {
-		global string $mm_assigned[];
 		//Since indicators update every time the selection changes, this should never need to be queried anywhere else
-		$mm_assigned = mm_getAssignedMaterials();
-		string $list[] = mm_getFilteredMaterials();
-		string $lambert1 = mm_getStartingSG();
+		string $mats[] = mm_getFilteredMaterials();
 
 		//Update whole list if a material or a material's button doesn't exist
-		for ( $item in $list ) {
-			if ( ! `objExists $item` ) { mm_build_tab_main(); return; }
-			if ( ! `iconTextButton -ex ("btn_" + $item)` ) { mm_build_tab_main(); return; }
+		for ( $mat in $mats ) {
+			if ( ! `objExists $mat` ) { mm_build_tab_main(); return; }
+			if ( ! `iconTextButton -ex ("btn_" + $mat)` ) { mm_build_tab_main(); return; }
 		}
 
 		//Otherwise just change existing nameplate indicator and assign button colors
 		string $assigned[] = $mm_assigned;
 		string $marked[] = mm_getMarkedMaterials();
 
-		int $enabled = 1;
+		//Set logic for Enable or Disable rename/delete material control for lambert1
 		if ( `size $assigned` == 1 && $assigned[0] == $lambert1 && `size $marked` <= 1 && $marked[0] == $lambert1 ) { $enabled = 0; }
 		if ( $assigned[0] == "" && `size $mm_markers` == 1 && $mm_markers[0] == $lambert1 ) { $enabled = 0; }
-		iconTextButton -e -en $enabled mDelete;
-		iconTextButton -e -en $enabled mRename;
 
-		//Update handedness icon
-		mm_updateHandedness();
-		
 		//Always update if "sort assigned to top" is on
 		if ( $mm_cb_sass ) { mm_build_tab_main(); return; }
 
 		int $onSelCounter;
-		for ( $mat in $list ) {
+		for ( $mat in $mats ) {
 			float $bgc[] = mm_getMaterialColor($mat);
 			iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ("ass_" + $mat);
 
@@ -3045,7 +3136,15 @@ global proc mm_updateIndicators() {
 		//Update On Selection counter text
 		text -e -l $onSelCounter txt_main_assignNum;
 	}
-	
+
+	//Update handedness icon
+	mm_updateHandedness();
+
+	//Enable or Disable rename/delete material control
+	if ( $mm_assigned[0] == $lambert1 ) { $enabled = 0; }
+	iconTextButton -e -en $enabled mDelete;
+	iconTextButton -e -en $enabled mRename;	
+
 	float $bgc[] = mm_getButtonColor("near black");
 	frameLayout -e -l "     Material List" -bgc $bgc[0] $bgc[1] $bgc[2] mm_tab_main;
 }
@@ -3270,40 +3369,40 @@ global proc mm_changeUISize(string $element) {
 	global int $mm_bs_wind;
 	global int $mm_bs_name;
 
-	if ( $element == "nameplates" ) {
-		string $prompt = `promptDialog -title "Nameplate Size"
-			-message "Enter a value between 12 and 48 (default is 25)"
-			-button "OK"
-			-button "Cancel"
-			-defaultButton "Create && Assign"
-			-cancelButton "Cancel"`;
-		int $number = ((int)`promptDialog -q -text`);
-	
-		if ( $prompt == "Cancel" ) { return; }
+	int $number;
 
-		$number = `min 48 $number`;
-		$number = `max 12 $number`;
-		$mm_bs_name = $number;
-		mm_build_tab_main();
+	string $title = "Nameplate Size";
+	int $min = 12;
+	int $max = 48;
+	int $def = 60;
+	if ( $element == "window" ) { 
+		$title = "Window Width";
+		$min = 325;
+		$max = 600;
+		$def = 325;
 	}
+	string $message = ( "Enter a value between " + $min + " and " + $max + "\n   (default is " + $def + ")" );
 
-	else if ( $element == "window" ) {
-		string $prompt = `promptDialog -title "Window Width"
-			-message "Enter a value between 325 and 600 (default is 325)"
-			-button "OK"
-			-button "Cancel"
-			-defaultButton "OK"
-			-cancelButton "Cancel"`;
-		string $n = `promptDialog -q -text`;
-		int $number = ((int)$n);
+	string $prompt = `promptDialog -title $title
+		-message $message
+		-button "OK"
+		-button "Cancel"
+		-defaultButton "OK"
+		-cancelButton "Cancel"`;
 
-		if ( $prompt == "Cancel" ) { return; }
+	if ( $prompt == "Cancel" ) { return; }
 
-		$number = `min 600 $number`;
-		$number = `max 325 $number`;
+	catchQuiet( $number = ((int)`promptDialog -q -text`) );
+	$number = `min $max $number`;
+	$number = `max $min $number`;
+
+	if ( $element == "nameplates" ) { 
+		$mm_bs_name = $number;
+		mm_build_tab_main(); 
+	}
+	else { 
 		$mm_bs_wind = $number;
-
-		evalDeferred("materialManager;");
+		evalDeferred("materialManager;"); 
 	}
 }
 
@@ -3319,6 +3418,7 @@ global proc mm_suspendIndicators() {
 		string $mats[] = mm_getFilteredMaterials();
 		for ( $mat in $mats ) {
 			iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ( "btn_" + $mat );
+			iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ( "ass_" + $mat );
 		}
 	}
 	else {
@@ -3394,6 +3494,9 @@ global proc int mm_isValidMaterial(string $mat) {
 	if ( `pluginInfo -q -l "turtle.mll"` ) { $types = stringArrayCatenate($types, { "ilrAshikhminShader", "ilrBssrdfShader", "ilrDielectricShader" , "ilrHwBakeVisualizer" , "ilrOccSampler" , "ilrOrenNayarShader" }); }
 	//arnold
 	if ( `pluginInfo -q -l "mtoa.mll"` ) { $types = stringArrayCatenate($types, { "aiAmbientOcclusion", "aiComplexIor", "aiCurvature", "aiHair", "aiRaySwitch", "aiSkin", "aiStandard", "aiThinFilm", "aiUtility", "aiWireframe", "aiCarPaint", "aiFlat", "aiMixShader", "aiShadowMatte", "aiStandardHair", "aiStandardSurface", "aiSwitch", "aiTwoSided" }); }
+
+	//vray
+	if ( `pluginInfo -q -l "vrayformaya.mll"` ) { $types = stringArrayCatenate($types, { "VRayAISurface", "VRayBlendMtl", "VRayBumpMtl", "VRayCarPaintMtl", "VRayFastSSS2", "VRayFlakesMtl", "VRayLightMtl", "VRayMeshMaterial", "VRayMtl", "VRayMtl2Sided", "VRayMtlGLSL", "VRayMtlHair3", "VRayMtlMDL", "VRayMtlOSL", "VRayMtlRenderStats", "VRayMtlWrapper", "VRayPointParticleMtl", "VRayScannedMtl", "VRaySimbiont", "VRaySkinMtl", "VRayStochasticFlakesMtl", "VRaySwitchMtl", "VRayVRmatMtl", "VRayAerialPerspective", "VRayEnvironmentFog", "VRayScatterFog", "VRaySimpleFog", "VRaySphereFadeVolume" }); }
 
 	//redshift
 	if ( `pluginInfo -q -l "redshift4maya.mll"` ) { $types = stringArrayCatenate($types, { "RedshiftArchitectural", "RedshiftCarPaint", "RedshiftHair", "RedshiftIncandescent", "RedshiftMaterial", "RedshiftMaterialBlender", "RedshiftMatteShadowCatcher", "RedshiftShaderSwitch", "RedshiftSkin", "RedshiftSprite", "RedshiftSubSurfaceScatter" } ); }
@@ -4031,15 +4134,15 @@ global proc mm_info(int $index) {
 	string $allText = stringArrayToString( $infoTextTable, "`");
 	string $split[] = mm_split($allText, "9");
 	string $counter[] = mm_split($split[0], "`");
-	int $urlIndex = `size $counter` - 2;
+	int $urlIndex = `size $counter` + 1;
 	//Open URLs in a web browser automatically.  The applicable index is subject to change if new menu items are added behind this index.
 	if ( $index > $urlIndex && ! mm_isMayaLT() && ! `about -mac` ) {
+		print `size $counter`;;
 		// Directly open the link if not Maya LT (LT does not allow use of `system`)
 		string $cmd = ( "system \"start explorer " + $infoText + "\";" );
 		eval( $cmd );
 		return;
 	}
-
 	mm_setCurrentTab(1);
 	mm_deleteUI("mm_form_mats");
 	button -e -vis 0 mm_btn_suspend;

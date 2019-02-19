@@ -94,6 +94,14 @@ VALUE:1
 ID:mm_cb_appm
 
 
+//  When initializing MM5 for the first time, the Material List will want to check the scene
+//  Menu Location:  Sorting > Suspend Material List Updating
+//  	0  -  Non suspended (default)
+//  	1  -  Suspend Material List updating
+VALUE:0
+ID:mm_cb_suspend
+
+
 //  Set the starting map width for the ID Map Baker when MM5 opens.
 //  Tab Location:  ID Map Baker > Map Width
 //  	128   -  Minimum width
