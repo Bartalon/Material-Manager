@@ -1,13 +1,14 @@
-//  PLEASE READ:  About this File:
-//    This file contains all the global settings of the Material Manager.  
-//    You can configure how MM5 behaves when you open it by changing the number adjacent to the VALUE: line.
-//    When adjusting the values, ensure there are no spaces.
-//    Do not modify the ID: line!
-//	  Do not change the order of the entries!
-//    
-//  Additionally, all these settings are adjustable within Maya if you need to toggle between them.  
-//    Any changes using the settings within Maya will reset next time you open Maya.  If you want a setting to remain permanently, change the values in this file.
-
+////
+////  PLEASE READ:  About this File:
+////    This file contains all the global settings of the Material Manager.  
+////    You can configure how MM5 behaves when you open it by changing the number adjacent to the VALUE: line.
+////    When adjusting the values, ensure there are no spaces.
+////    Do not modify the ID: line!
+////    Do not change the order of the entries!
+////    
+////  Additionally, all these settings are adjustable within Maya if you need to toggle between them.  
+////    Any changes using the settings within Maya will reset next time you open Maya.  If you want a setting to remain permanently, change the values in this file.
+////
 
 
 
@@ -176,10 +177,19 @@ ID:mm_dk_side
 //  Texture suffix definitions for auto-loading files  //
 /////////////////////////////////////////////////////////
 //
+//  This checkbox value will be used when determining whether or not to match to exact material names
+//  when using the Load Files from Folder tool.  
+// 		0  -  Do not match material name, find and use the first file that matches the suffix only
+// 		1  -  Match the material name exactly in addition to matching the suffix  (default)
+VALUE:1
+ID:mm_cb_matchMat
+
+
+//
 //  This suffix will be used when searching for the DIFFUSE / ALBEDO / BASECOLOR channel inside the designated folder
 //  when using the Load Files from Folder tool.  The default suffix is _A (for albedo)
 //
-VALUE:_A
+VALUE:_BC
 ID:mm_load_baseColor
 
 
@@ -230,5 +240,3 @@ ID:mm_load_opacity
 //
 VALUE:_AO
 ID:mm_load_occlusion
-
-
