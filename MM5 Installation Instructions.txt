@@ -2,9 +2,15 @@ Thank you for downloading Material Manager 5!
 
 This script is for Maya 2013 and newer.  This includes LT editions and service packs for all versions.
 
-You can view version history here:  https://goo.gl/KS6Djm
+
+You can view version history here:  
+https://goo.gl/KS6Djm
 
 
+Check for the latest version of Material Manager at these locations:
+https://gumroad.com/l/MaterialManager
+https://www.highend3d.com/maya/script/free-material-manager-for-maya
+http://cbr.sh/xw5m6f
 
 
 ////  Installation Instructions  ////

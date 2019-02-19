@@ -1,5 +1,5 @@
-global string $mm_Version = "5.0.6";
-global string $mm_Release = "31 March 2018";
+global string $mm_Version = "5.0.7";
+global string $mm_Release = "4 April 2018";
 global int $mm_scriptJob;
 
 if ( $mm_scriptJob == 0 ) {
@@ -2705,11 +2705,11 @@ global proc string[] mm_getPresetsData() {
 global proc string mm_getValidChannelName(string $mat, string $channel) {
 	string $channels[];
 	//Some materials have more than one of these channels so they are ordered from most relevant to least relevant
-	if ( $channel == "color" ) { $channels = { ".TEX_color_map", ".inputs[0].color", ".color", ".surfaceColor", ".diffuse", ".diffuseColor", ".outColor", ".miColor" }; }
+	if ( $channel == "color" ) { $channels = { ".TEX_color_map", ".inputs[0].color", ".color", ".surfaceColor", ".diffuse", ".diffuseColor", ".outColor", ".miColor", ".hardwareColor" }; }
 	else if ( $channel == "normal" ) { $channels = { ".TEX_normal_map", ".normalCamera", ".normalMap", ".miNormalCamera" }; }
 	else if ( $channel == "roughness" ) { $channels = { ".TEX_roughness_map", ".diffuseRoughness" }; }
 	else if ( $channel == "metallic" ) { $channels = { ".TEX_metallic_map" }; }
-	else if ( $channel == "specular" ) { $channels = { ".specularColor", ".KsColor", ".miSpecularColor" }; }
+	else if ( $channel == "specular" ) { $channels = { ".specularColor", ".KsColor", ".miSpecularColor", ".reflectivity" }; }
 	else if ( $channel == "emissive" ) { $channels = { ".TEX_emissive_map", ".incandescence", ".emissionColor" }; }
 	else if ( $channel == "transparency" ) { $channels = { ".inputs[0].transparency", ".transparency", /* ".outTransparency", */ ".miTransparency" }; }
 	else if ( $channel == "occlusion" ) { $channels = { "TEX_ao_map" }; }
@@ -3070,9 +3070,7 @@ global proc mm_selectMaterial(string $mat) {
 		if (size(`ls -sl`) == 0) { print "Material is unassigned in this scene.\n"; }
 		return;
 	}
-
-
-	if ( $modifier == 1 ) {
+	else if ( $modifier == 1 ) {
 		int $start = stringArrayFind($mm_lastMat, 0, $mats);
 		int $end = stringArrayFind($mat, 0, $mats);
 		string $matRange[];
@@ -3081,6 +3079,9 @@ global proc mm_selectMaterial(string $mat) {
 			$matRange[`size $matRange`] = $mats[$i];
 		}
 		select $matRange;
+	}
+	else if ( $modifier == 8 ) {
+		select -tgl $mat;
 	}
 	else { select $mat;	}
 
@@ -3383,20 +3384,23 @@ global proc int mm_isValidMaterial(string $mat) {
 	if ( `pluginInfo -q -l "dx11Shader.mll"` ) { $types = stringArrayCatenate($types, { "dx11Shader" }); }
 	if ( `pluginInfo -q -l "glslShader.mll"` ) { $types = stringArrayCatenate($types, { "GLSLShader" }); }
 	if ( `pluginInfo -q -l "shaderFXPlugin.mll"` ) { $types = stringArrayCatenate($types, { "ShaderfxShader", "StingrayPBS" }); }
+	//bifrost
 	if ( `pluginInfo -q -l "bifrostvisplugin.mll"` ) { $types = stringArrayCatenate($types, { "bifrostLiquidMaterial", "bifrostFoamMaterial", "bifrostAeroMaterial" }); }
-
+	//metal ray
 	if ( `pluginInfo -q -l "Mayatomr.mll"` ) { $types = stringArrayCatenate($types, { "mdl_material", "mi_car_paint_phen_x", "mi_car_paint_phen_x_passes", "mi_metallic_paint_x", "mi_metallic_paint_x_passes", "mia_material_x", "mia_material_x_passes", "mib_illum_hair", "mib_illum_hair_x", "mib_ptex_lookup", "mila_material", "misss_fast_shader2_x", "misss_fast_shader_x", "misss_fast_shader_x_passes", "misss_fast_simple_maya", "misss_fast_skin_maya", "object_light", "xgen_hair_phen", "xgen_hair_physical" }); }
+	//renderman
 	if ( `pluginInfo -q -l "RenderMan_for_Maya.mll"` ) { $types = stringArrayCatenate($types, { "RMSDisplacement", "RMSGPSurface", "RMSGlass", "RMSHair", "RMSHoldOut", "RMSMatte", "RMSOcean", "RMSShaveHair", "RenderManDisplacement", "RenderManShader", "RenderManShaderObject", "RenderManVolume" }); }
-	//turtle materials
+	//turtle
 	if ( `pluginInfo -q -l "turtle.mll"` ) { $types = stringArrayCatenate($types, { "ilrAshikhminShader", "ilrBssrdfShader", "ilrDielectricShader" , "ilrHwBakeVisualizer" , "ilrOccSampler" , "ilrOrenNayarShader" }); }
-	//arnold materials
-	if ( `pluginInfo -q -l "mtoa.mll"` ) { $types = stringArrayCatenate($types, { "aiAmbientOcclusion", "aiHair", "aiRaySwitch", "aiShadowCatcher", "aiSkin", "aiStandard", "aiUtility", "aiWireframe" }); }
-	//redshift materials
+	//arnold
+	if ( `pluginInfo -q -l "mtoa.mll"` ) { $types = stringArrayCatenate($types, { "aiAmbientOcclusion", "aiComplexIor", "aiCurvature", "aiHair", "aiRaySwitch", "aiSkin", "aiStandard", "aiThinFilm", "aiUtility", "aiWireframe", "aiCarPaint", "aiFlat", "aiMixShader", "aiShadowMatte", "aiStandardHair", "aiStandardSurface", "aiSwitch", "aiTwoSided" }); }
+
+	//redshift
 	if ( `pluginInfo -q -l "redshift4maya.mll"` ) { $types = stringArrayCatenate($types, { "RedshiftArchitectural", "RedshiftCarPaint", "RedshiftHair", "RedshiftIncandescent", "RedshiftMaterial", "RedshiftMaterialBlender", "RedshiftMatteShadowCatcher", "RedshiftShaderSwitch", "RedshiftSkin", "RedshiftSprite", "RedshiftSubSurfaceScatter" } ); }
 
 	//Catch for special case materials:
-	if ( $ver > 2017 ) { $types = stringArrayRemove( { "aiShadowCatcher" }, $types); }
 	if ( $ver < 2016 ) { $types = stringArrayRemove( { "StingrayPBS", "bifrostFoamMaterial", "bifrostAeroMaterial" }, $types); }
+
 
 	string $valid[];
 	for ( $type in $types ) {
