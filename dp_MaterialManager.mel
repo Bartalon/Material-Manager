@@ -1,5 +1,5 @@
-global string $mm_Version = "5.1.2";
-global string $mm_Release = "22 September 2018";
+global string $mm_Version = "5.1.3";
+global string $mm_Release = "7 October 2018";
 global int $mm_scriptJob;
 
 if ( $mm_scriptJob == 0 ) {
@@ -1243,9 +1243,15 @@ global proc mm_assignPreset(string $preset, float $rgbC[], float $rgbS[], float 
 		//Color channel override for assigning a preset color to StingrayPBS, as tint and texture files use two different channels
 		if ( $path == ".TEX_color_map" ) { $path = ".base_color"; }
 		catchQuiet (setAttr(( $mat + $path ),"-type","double3",$rgbC[0],$rgbC[1],$rgbC[2]) );
-		if ( `objExists ($mat + ".cosinePower")` ) {
-			setAttr ( $mat + ".specularColor" ) -type double3 $rgbS[0] $rgbS[1] $rgbS[2];
-			setAttr ( $mat + ".cosinePower" ) $cosP;
+
+		$path = mm_getValidChannelName($mat, "specular");
+		warning $path;
+		if ( `objExists ($mat + $path)` ) {
+			setAttr ( $mat + $path ) -type double3 $rgbS[0] $rgbS[1] $rgbS[2];
+			$path = mm_getValidChannelName($mat, "roughness");
+			// catch for out of range values
+			if ( mm_has( $path, "roughness" ) ) { $cosP = 1/$cosP; }
+			setAttr ( $mat + $path ) $cosP;
 		}
 		if ( $apply && $assign[0] != "" ) { 
 			select $assign;
@@ -2833,6 +2839,7 @@ global proc string mm_getValidChannelName(string $mat, string $channel) {
 	if ( $channel == "color" ) { 
 		$channels = { 
 			".TEX_color_map", 
+			".diffuse_color",
 			".DiffuseTexture",
 			".overallTex", 
 			".viewportColor",
@@ -2863,9 +2870,11 @@ global proc string mm_getValidChannelName(string $mat, string $channel) {
 	else if ( $channel == "roughness" ) { 
 		$channels = { 
 			".TEX_roughness_map",
+			".refl_roughness",
 			".base_glossiness", 
 			".primaryGlossiness",
-			".diffuseRoughness" 
+			".diffuseRoughness",
+			".cosinePower"
 		}; 
 	}
 
@@ -2873,6 +2882,7 @@ global proc string mm_getValidChannelName(string $mat, string $channel) {
 	else if ( $channel == "metallic" ) { 
 		$channels = { 
 			".TEX_metallic_map",
+			".refl_metalness",
 			".ReflectionMask", //for AutodeskUberShader
 			".metalness"
 		}; 
@@ -2881,6 +2891,8 @@ global proc string mm_getValidChannelName(string $mat, string $channel) {
 	//Specular
 	else if ( $channel == "specular" ) { 
 		$channels = { 
+			".refl_color",
+			".refl_reflectivity",
 			".SpecularTexture",
 			".specularColor", 
 			".primarySpecular", 
