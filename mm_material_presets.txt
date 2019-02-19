@@ -13,17 +13,33 @@
 //	  10) Material Types are case sensitive.  You will get an "invalid or unsupported" warning if the Material Type isn't exact.
 //
 //
+//  Valid material names list:
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  MAYA BUILT IN:  	phong 				lambert 					oceanShader 			fluidShape			useBackground
+//						phongE 				layeredShader				rampShader 			 	hairTubeShader		shadingMap
+//						blinn 				anisotropic 				surfaceShader
 //
-//Valid material names list:
-//  MAYA BUILT IN:  	oceanShader, rampShader, fluidShape, phong, phongE, lambert, blinn, anisotropic, useBackground, hairTubeShader, layeredShader, surfaceShader, shadingMap
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  DEFAULT PLUGINS: 	cgfxShader 			dx11Shader 					GLSLShader 				ShaderfxShader 		StingrayPBS (2016+)			bitfrostLiquidMaterial
+// 																																				bitfrostFoamMaterial (2016+)
+//																																				bitfrostAeroMaterial (2016+)
 //
-//  DEFAULT PLUGINS: 	cgfxShader, dx11Shader, GLSLShader, ShaderfxShader, StingrayPBS, bitfrostLiquidMaterial
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  RENDERMAN:			RMSDisplacement 	RMSShaveHair				RMSHoldOut 				RMSOcean 			RenderManShader 			RenderManVolume
+//						RMSGPSurface		RMSHair 					RMSMatte				RMSGlass 			RenderManShaderObject 		RenderManDisplacement
 //
-//  RENDERMAN:			RMSDisplacement, RMSGPSurface, RMSGlass, RMSHair, RMSHoldOut, RMSMatte, RMSOcean, RMSShaveHair, RenderManDisplacement, RenderManShader, RenderManShaderObject, RenderManVolume
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  MENTAL RAY:			mdl_material		mi_car_paint_phen_x 	 	mia_material_x 			mib_illum_hair		misss_fast_simple_maya
+//						mila_material		mi_car_paint_phen_x_passes	mia_material_x_passes 	mib_illum_hair_x 	misss_fast_skin_maya
+//						object_light		mi_metallic_paint_x									mib_ptex_lookup 	misss_fast_shader2_x
+//						xgen_hair_phen		mi_metallic_paint_x_passes												misss_fast_shader_x 
+//						xgen_hair_physical																			misss_fast_shader_x_passes
 //
-//  MENTAL RAY:			mdl_material, mi_car_paint_phen_x, mi_car_paint_phen_x_passes, mi_metallic_paint_x, mi_metallic_paint_x_passes, mia_material_x, mia_material_x_passes, mib_illum_hair, 
-//						mib_illum_hair_x, mib_ptex_lookup, mila_material, misss_fast_shader2_x, misss_fast_shader_x, misss_fast_shader_x_passes, misss_fast_simple_maya, misss_fast_skin_maya, 
-//						object_light, xgen_hair_phen, xgen_hair_physical
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  ARNOLD: 			aiStandard 			aiHair						aiRaySwitch				aiAmbientOcclusion
+//						aiUtility			aiSkin						aiWireframe 			aiShadowCatcher
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  The valid material names above are populated on a per-version and per-plugin basis.  If your version of maya is missing a plugin, the materials associated with
 //  that plugin will not be part of the valid material list.  A material's validity is checked using the function mm_isValidMaterial() and is called when
@@ -41,7 +57,7 @@
 //  	mm_assignPreset()		Line 1080
 //  	mm_getPresetsData()		Line 2600
 //  	mm_isValidMaterial()	Line 3300
-
+//
 
 
 //Material ID Swatches
