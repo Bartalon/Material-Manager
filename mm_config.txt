@@ -1,14 +1,13 @@
-////
-////  PLEASE READ:  About this File:
-////    This file contains all the global settings of the Material Manager.  
-////    You can configure how MM5 behaves when you open it by changing the number adjacent to the VALUE: line.
-////    When adjusting the values, ensure there are no spaces.
-////    Do not modify the ID: line!
-////    Do not change the order of the entries!
-////    
-////  Additionally, all these settings are adjustable within Maya if you need to toggle between them.  
-////    Any changes using the settings within Maya will reset next time you open Maya.  If you want a setting to remain permanently, change the values in this file.
-////
+//  PLEASE READ:  About this File:
+//    This file contains all the global settings of the Material Manager.  
+//    You can configure how MM5 behaves when you open it by changing the number adjacent to the VALUE: line.
+//    When adjusting the values, ensure there are no spaces.
+//    Do not modify the ID: line!
+//	  Do not change the order of the entries!
+//    
+//  Additionally, all these settings are adjustable within Maya if you need to toggle between them.  
+//    Any changes using the settings within Maya will reset next time you open Maya.  If you want a setting to remain permanently, change the values in this file.
+
 
 
 
@@ -44,6 +43,14 @@ VALUE:1
 ID:mm_cb_spre
 
 
+//  When initializing MM5 for the first time, the Material List will want to check the scene
+//  Menu Location:  Sorting > Suspend Material List Updating
+//  	0  -  Non suspended (default)
+//  	1  -  Suspend Material List updating
+VALUE:0
+ID:mm_cb_suspend
+
+
 //  Display the banner area (Material Manager 5 graphic and Import/Export buttons)
 //  Menu Location:  Bonus Settings > Show Banner Section
 //  	0  -  Hide banner area
@@ -60,10 +67,11 @@ VALUE:0
 ID:mm_cb_part
 
 
-//  When clicking on a nameplate, creating a quick material, or assigning a material, that material will display in the Attribute Editor.
-//  Menu Location:  Bonus Tools > Sort Assigned Materials First
-//  	0  -  Do not open the attribute editor
-//  	1  -  Open the Attribute Editor when necessary
+//  When selecting a material using the nameplates, or assigning a material to an object using the square swatches,
+//  MM5 will automatically display that material in the Attribute Editor.
+//  Menu Location:  Bonus Settings > Show Attribute Editor when Assigning/Selecting
+//  	0  -  Do not show material Attribute Editor
+//  	1  -  Show material in Attribute Editor (default)
 VALUE:1
 ID:mm_cb_attr
 
@@ -99,16 +107,8 @@ ID:mm_cb_find
 //  Menu Location:  Bonus Settings > Auto-append "M_" to New Materials
 //  	0  -  Do not append (default)
 //  	1  -  Append M_ to new materials
-VALUE:0
+VALUE:1
 ID:mm_cb_appm
-
-
-//  When initializing MM5 for the first time, the Material List will want to check the scene
-//  Menu Location:  Sorting > Suspend Material List Updating
-//  	0  -  Non suspended (default)
-//  	1  -  Suspend Material List updating
-VALUE:0
-ID:mm_cb_suspend
 
 
 //  Set the starting map width for the ID Map Baker when MM5 opens.
@@ -173,23 +173,22 @@ VALUE:2
 ID:mm_dk_side
 
 
-/////////////////////////////////////////////////////////
-//  Texture suffix definitions for auto-loading files  //
-/////////////////////////////////////////////////////////
-//
-//  This checkbox value will be used when determining whether or not to match to exact material names
-//  when using the Load Files from Folder tool.  
-// 		0  -  Do not match material name, find and use the first file that matches the suffix only
-// 		1  -  Match the material name exactly in addition to matching the suffix  (default)
+//  When using the Load Files from Folder Tool, the 
+//  Menu Location:  Tools > Load Files from Folder (Options)
+//  	0  -  When searching for texture files, pick the first file that qualifies based on the suffixes only.
+//  	1  -  When searching for texture files, pick files only if they match the material name.
 VALUE:1
 ID:mm_cb_matchMat
 
 
+/////////////////////////////////////////////////////////
+//  Texture suffix definitions for auto-loading files  //
+/////////////////////////////////////////////////////////
 //
 //  This suffix will be used when searching for the DIFFUSE / ALBEDO / BASECOLOR channel inside the designated folder
 //  when using the Load Files from Folder tool.  The default suffix is _A (for albedo)
 //
-VALUE:_BC
+VALUE:_A
 ID:mm_load_baseColor
 
 
@@ -233,10 +232,3 @@ ID:mm_load_emissive
 //
 VALUE:_O
 ID:mm_load_opacity
-
-
-//  This suffix will be used when searching for the AMBIENT OCCLUSION channel inside the designated folder
-//  when using the Load Files from Folder tool.  The default suffix is _AO
-//
-VALUE:_AO
-ID:mm_load_occlusion
