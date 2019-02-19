@@ -1,4 +1,4 @@
-global string $mm_Version = "5.0.0";
+global string $mm_Version = "5.0.1";
 global string $mm_Release = "11 March 2018";
 global int $mm_scriptJob;
 
@@ -11,9 +11,9 @@ if ( $mm_scriptJob == 0 ) {
 	global int $mm_cb_suspend;
 	global string $mm_bk_format = "png";
 	if ( ! `objExists "lambert1"`) { $mm_startingSG = "phong"; }
-	$mm_scriptJob = `scriptJob -e "NewSceneOpened" "mm_build_tab_main();" -protected`;
-	$mm_scriptJob = `scriptJob -e "PostSceneRead" "mm_build_tab_main();" -protected`;
-	$mm_scriptJob = `scriptJob -e "Undo" "mm_build_tab_main();" -protected`;
+	$mm_scriptJob = `scriptJob -e "NewSceneOpened" "mm_updateMaterialManager();" -protected`;
+	$mm_scriptJob = `scriptJob -e "PostSceneRead" "mm_updateMaterialManager();" -protected`;
+	$mm_scriptJob = `scriptJob -e "Undo" "mm_updateMaterialManager();" -protected`;
 	$mm_scriptJob = `scriptJob -e "SelectionChanged" "eval(\"mm_updateFrameLayout(1)\"); evalDeferred(\"mm_updateIndicators()\");" -protected`;
 
 	source AEfileTemplate.mel;
@@ -56,6 +56,8 @@ global proc materialManager() {
 		if ( ! mm_isMayaLT() ) { 
 			mm_build_tab_baker(); 
 		}
+
+	pause -sec 0;
 
 	if ( $mm_dk_side == 2 ) { mm_setWindowDocking("float"); }
 	else if ( $mm_dk_side == 0 ) { mm_setWindowDocking("right"); }
@@ -534,6 +536,7 @@ global proc mm_build_tabContainer() {
 		-tabLabel $tab1 ("   Current Scene   ")
 		-tabLabel $tab2 ("  Color Presets  ")
 		-tabLabel $tab3 ("  ID Map Baker  ")
+		-cc ( "mm_updateIndicators()" )
 		$tabs;
 
 	string $lbl;
@@ -1058,7 +1061,6 @@ global proc mm_assignPreset(string $preset, float $rgbC[], float $rgbS[], float 
 	if ( ! mm_isValidMaterial($matType) ) { mm_warn("Material type \"" + $matType + "\" is either not valid or not supported."); return; }
 	global int $mm_cb_appm;
 	global int $mm_cb_inst;
-
 	int $applyToInstances = $mm_cb_inst;
 	//invert the option for applying to instances if Ctrl is held down
 	if ( `getModifiers` == 4 ) { $applyToInstances = 1-$applyToInstances; }
@@ -1109,7 +1111,6 @@ global proc mm_assignPreset(string $preset, float $rgbC[], float $rgbS[], float 
 		else if ( ! $apply ) { print ( $mat + " added to scene.\n" ); }
 	}
 	if ( `objExists $sel[0]` ) { select $sel; }
-	mm_build_tab_main();
 }
 
 
@@ -2178,6 +2179,7 @@ global proc string mm_getInitializeCode(string $nameCommandName) {
 
 	string $cmd = (
 "source dp_materialManager.mel;\n\
+eval(\"pause -sec 0;\");\n\
 if ( `window -ex \"materialManagerWindow\"` ) {\n\
 	deleteUI \"mmTools\";\n\
 	deleteUI \"mmSorting\";\n\
@@ -2847,6 +2849,15 @@ global proc mm_reportBakerModels(string $field) {
 /////////////////////////////  UI Updating
 
 
+global proc mm_updateMaterialManager() {
+	//This proc is called from the scriptjobs.  I made it its own function just in case more logic needs to be in place (for active tabs, search field data, etc.)
+	global string $mm_window;
+	if ( `window -ex mm_window` ) {
+		if ( mm_getCurrentTab() == 1 ) { mm_build_tab_main(); }
+	}
+}
+
+
 global proc mm_searchForMaterials() {
 	int $tab = `tabLayout -q -sti mm_tabs`;
 
@@ -2937,6 +2948,7 @@ global proc mm_updateFrameLayout(int $checkLargeSel) {
 global proc mm_updateIndicators() {
 	global string $mm_window;
 	if ( ! `window -ex $mm_window` ) { return; }
+	if ( mm_getCurrentTab() != 1 ) { return; }
 	global string $mm_markers[];
 	global int $mm_cb_sass;
 	global int $mm_cb_suspend;
@@ -3919,7 +3931,7 @@ global proc mm_info(int $index) {
 
 		
 		("Material Manager v" + $mm_Version + "\nReleased " + $mm_Release + "\n\nOnline version history can be found here:\nhttps://goo.gl/KS6Djm"),
-		"If you would like to request a feature or report a bug you have encountered, please send your correspondence to the email below:\n\nDennis.Porter.3D@gmail.com",
+		"Before submitting a request/report, please ensure you have the latest version of MM5.\n\nIf you still would like to request a feature or report a bug you have encountered, please send your correspondence to the email below:\n\nDennis.Porter.3D@gmail.com",
 		"https://youtu.be/s8BjqM4DEiQ",
 		"http://polycount.com/discussion/comment/2599241",
 		"http://cbr.sh/xw5m6f",
