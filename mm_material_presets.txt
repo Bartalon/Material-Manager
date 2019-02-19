@@ -49,6 +49,11 @@
 //						VRayFastSSS2 		VRayMtl2Sided 				VRayMtlRenderStats 		VRaySkinMtl 			VRayEnvironmentFog 
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  REDSHIFT: 			RedshiftHair 			RedshiftCarPaint 			RedshiftArchitectural 			RedshiftIncandescent
+// 						RedshiftMaterial 		RedshiftMaterialBlender		RedshiftMatteShadowCatcher		RedshiftShaderSwitch
+//						RedshiftSkin			RedshiftSprite				RedshiftSubSurfaceScatter
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  The valid material names above are populated on a per-version and per-plugin basis.  If your version of maya is missing a plugin, the materials associated with
 //  that plugin will not be part of the valid material list.  A material's validity is checked using the function mm_isValidMaterial() and is called when
