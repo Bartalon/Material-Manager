@@ -1,5 +1,5 @@
-global string $mm_Version = "5.0.5";
-global string $mm_Release = "20 March 2018";
+global string $mm_Version = "5.0.6";
+global string $mm_Release = "31 March 2018";
 global int $mm_scriptJob;
 
 if ( $mm_scriptJob == 0 ) {
@@ -79,7 +79,7 @@ global proc materialManager() {
 		mm_bk_checkButtonState();
 	}
 	mm_updateHandedness();
-	mm_updateIndicators();
+	//mm_updateIndicators();
 
 	setFocus $mm_window;
 	print ( "Material Manager v" + $mm_Version + "\n" );
@@ -370,37 +370,47 @@ global proc mm_build_materialControl() {
 	string $mm_mat_Match = "MaterialManager/mat_Match.png";
 	string $mm_mat_Rename = "MaterialManager/mat_Rename.png";
 	string $mm_mat_Delete = "MaterialManager/mat_Delete.png";
+	string $mm_i_divider = "branch-vline.svg";
+	if  ( mm_getVersion() < 2016 ) { $mm_i_divider = ""; }
+
 	int $dim = 35;
 	int $custOffset = 105;
-
+	int $phongOffset = 35;
 	formLayout -p mm_grid_materialControl mm_form_materialControl;
-		if ( mm_isMayaLT() ) { iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_phong -c "mm_createQuickMaterial(\"Phong\")" -ann "Quick Phong.  Hold CTRL to skip the name prompt." qDefault; }
-		else { iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_lambert -c "mm_createQuickMaterial(\"Lambert\")" -ann "Quick Lambert.  Hold CTRL to skip the name prompt." qDefault; }
-		iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_blinn -c "mm_createQuickMaterial(\"Blinn\")" -ann "Quick Blinn" qBlin;
+		//Certain versions of Maya don't have access to certain materials.  So, an invisible text box with the same identifier as those materials are made in their place.
+		//This allows me to skip additional formLayout edit commands specific to a particular version
+
+		if ( ! mm_isMayaLT() ) { 
+			int $phongOffset = 0;
+			iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_lambert -c "mm_createQuickMaterial(\"Lambert\")" -ann "Quick Lambert.  Hold CTRL to skip the name prompt." qLambert;
+		}
+		else { text -l "" qLambert; }
+
+		iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_phong -c "mm_createQuickMaterial(\"Phong\")" -ann "Quick Phong.  Hold CTRL to skip the name prompt." qPhong;
+		iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_blinn -c "mm_createQuickMaterial(\"Blinn\")" -ann "Quick Blinn.  Hold CTRL to skip the name prompt." qBlinn;
+
 		if ( mm_getVersion() >= 2016 ) {
 			iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_stingray -c "mm_createQuickMaterial(\"StingrayPBS\")" -ann "Quick StringrayPBS.  Hold CTRL to skip the name prompt." qSPBS;
 		}
-		else { 
-			$custOffset = 70;
-			//For 2015 and older, an invisible text box with the same identifier as the StingrayPBS button above.
-			//This allows me to skip a second formLayout edit command specific to a particular version
-			text -l "" qSPBS;
-			//iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_checker -c "mm_createQuickChecker()" qChec;
-		}
-		iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_custom -c "mm_createCustomMaterial()" -ann "Quick Custom Material" qCust;
+		else { text -l "" qSPBS; }
+		//iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_checker -c "mm_createQuickChecker()" qChec;
+
+		image -i $mm_i_divider qDivider;
+		iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_custom -c "mm_createCustomMaterial()" -ann "Quick Custom Material" qCustom;
 		//iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_Refresh -c "mm_build_tab_main()" -ann "Refresh material list" mRefresh;
 		iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_duplicate -c "mm_duplicateMaterial()" -ann "Duplicate marked materials" mDuplicate;
 		iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_Match -c "mm_matchMaterial()" -ann "Select objects/polygons to which marked materials are assigned" mMatch;
 		iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_Rename -c "mm_renameMaterial()" -ann "Rename marked materials" mRename;
 		iconTextButton -w $dim -h $dim -style "iconOnly" -image $mm_mat_Delete -c "mm_deleteMaterial()" -ann "Delete marked materials & all connected utilities/textures" mDelete;
 
-
 	formLayout -edit 
-		-attachForm 		qDefault	"left" 	0
-		-attachForm 		qBlin		"left" 	35
-		//-attachForm 		qChec		"left" 	70
-		-attachForm			qSPBS		"left"	70
-		-attachForm 		qCust		"left" 	$custOffset
+		-attachForm 		qLambert	"left" 	0
+		-attachForm 		qPhong 		"left"	$phongOffset
+		-attachForm 		qBlinn		"left" 	($phongOffset + 35)
+		-attachForm			qSPBS		"left"	($phongOffset + 70)
+		-attachForm 		qCustom		"left" 	($phongOffset + 105)
+		-attachForm 		qDivider 	"left"	($phongOffset + 132)
+		-attachForm 		qDivider 	"top"	5
 		//-attachForm			mRefresh 	"left"	140
 		//-attachControl 		mRefresh	"right" 0 	 		mDuplicate
 		-attachForm			mDuplicate	"right" 110
@@ -1250,7 +1260,6 @@ global proc string mm_createShaderAndRename(string $type, string $name) {
 	$newName = `ls -sl`;
 	$name = $newName[0];
 	rename ( mm_getSG($name) ) ($name + "_SG");
-	warning;
 	return $name;
 }
 
@@ -1362,6 +1371,9 @@ global proc mm_deleteMaterial() {
 	string $SGs[];
 	string $connections[];
 
+	warning $mats;
+	warning $mm_assigned;
+
 	//Compare what is marked for deletion to what is on the model.  If exactly identical, prompt user
 	if ( `size $mats` == `size $mm_assigned` && `size $mats` > 1 ) {
 		int $identical = 1;
@@ -1406,8 +1418,6 @@ global proc mm_deleteMaterial() {
 	$connections = stringArrayRemove({ $lambert1 }, $connections);
 	$connections = mm_cleanStringArray($connections);
 	$connections = mm_OmitPBSGlobalTextures($connections);
-
-	warning $connections;
 
 	//Here we need to pop any item and its hierachy that is being used by multiple materials
 	int $i;
@@ -1814,23 +1824,21 @@ global proc mm_matchMaterial() {
 		select -add ( mm_getSG($mat) );
 	}
 
-	//Here a separate array for model objects and face objects is define; when selecting by shading groups, if a material is assigned to
-	//  an entire object, the object is selected rather than all the faces.  This helps avoid confusion about whether an entire object
-	//  has the same material assigned or if it's just a collection of faces.  I want the result to be the same visually, so I need to 
-	//  make the selection of these two groups individually.
-	string $allAssignedFaces[];
-	string $allAssignedModels[];
 	if ( $selectionOnly == 1 ) {
+		//Here a separate array for model objects and face objects is define; when selecting by shading groups, if a material is assigned to
+		//  an entire object, the object is selected rather than all the faces.  This helps avoid confusion about whether an entire object
+		//  has the same material assigned or if it's just a collection of faces.  I want the result to be the same visually, so I need to 
+		//  make the selection of these two groups individually.
+		string $allAssignedFaces[];
+		string $allAssignedModels[];
 		$allAssignedModels = mm_filterShapes(`ls -l -sl`);
 		$allAssignedFaces = stringArrayRemove($allAssignedModels, `ls -l -fl -sl`);
 		mm_stepProgressBar(1);
-	}
 
-	//Now that the selected and totals have been stored for both faces and objects, they can be intersected individually 
-	//  (faces with faces, objects with objects) and then added together as part of the final selection
-	string $matchedFaces[];
-	string $matchedModels[];
-	if ( $selectionOnly == 1 ) {
+		//Now that the selected and totals have been stored for both faces and objects, they can be intersected individually 
+		//  (faces with faces, objects with objects) and then added together as part of the final selection
+		string $matchedFaces[];
+		string $matchedModels[];
 		string $dontPick[];
 		//Faces
 		$dontPick = stringArrayRemove($allSelectedFaces, $allAssignedFaces);
@@ -1844,6 +1852,12 @@ global proc mm_matchMaterial() {
 		select $matchedModels;
 		select -add $matchedFaces;
 	}
+	else {
+		string $finalSel[] = `ls -l -sl`;
+		if ( $finalSel[0] == "" ) { mm_warn("Marked material(s) not assigned to any polygons."); }
+	}
+
+
 	mm_reinstateMainProgressBar();
 }
 
@@ -1974,7 +1988,27 @@ global proc mm_duplicateMaterial() {
 			if ( $of[0] != "" ) { rename $of[0] ( $newName + "_O" ); }
 		}
 
-		mm_checkAndRelateStingRayGlobals($newName);
+		if ( mm_getVersion() > 2015 ) {
+			string $pbsMats[] = `ls -type "StingrayPBS"`;
+			if ( stringArrayContains($mat, $pbsMats) ) {
+				//Get original & new material's connections
+				string $diffCube[] = `listConnections ( $mat + ".TEX_global_diffuse_cube" )`;
+				string $specCube[] = `listConnections ( $mat + ".TEX_global_specular_cube" )`;
+				string $BRDF[] = `listConnections ( $mat + ".TEX_brdf_lut" )`;
+				string $newDiffCube[] = `listConnections ( $newName + ".TEX_global_diffuse_cube" )`;
+				string $newSpecCube[] = `listConnections ( $newName + ".TEX_global_specular_cube" )`;
+				string $newBRDF[] = `listConnections ( $newName + ".TEX_brdf_lut" )`;
+				//Delete duplicate material's connection
+				if ( $newDiffCube[0] != $diffCube[0] ) { delete $newDiffCube[0]; }
+				if ( $newSpecCube[0] != $specCube[0] ) { delete $newSpecCube[0]; }
+				if ( $newBRDF[0] != $BRDF[0] ) { delete $newBRDF[0]; }
+				//Attach original connections to duplicate
+				defaultNavigation -force true -connectToExisting -source $diffCube -destination ( $newName + ".TEX_global_diffuse_cube" );
+				defaultNavigation -force true -connectToExisting -source $specCube -destination ( $newName + ".TEX_global_specular_cube" );
+				defaultNavigation -force true -connectToExisting -source $BRDF -destination ( $newName + ".TEX_brdf_lut" );
+			}
+		//mm_checkAndRelateStingRayGlobals($newName);
+		}
 	}
 
 	select $sel;
@@ -2216,22 +2250,28 @@ global proc mm_toEdgePerimeter() {
 
 
 global proc string mm_getInitializeCode(string $nameCommandName) {
+	//This particular procedure is called when both binding a hotkey and creating a shelf button.  Because the hotkey is dependent on the entire code block string below,
+	//It's simpler to just have the Create Shelf Button command reference all this instead of having it's own "toggle window" procedure properly written into this file.
+
 	if ( $nameCommandName == "" ) { $nameCommandName = "materialManager;"; }
 
 	//This sequence of strings has been set up as an alternative to escaped line breaks within a string.  Escaped line breaks seem to create an error on Mac OS.
-	string $c0 = 	"source dp_materialManager.mel; \n";
-	string $c1 = 	"if ( `window -ex \"materialManagerWindow\"` ) { \n";
-	string $c2 = 	"	deleteUI \"mmTools\"; deleteUI \"mmSorting\"; deleteUI \"mmCleanup\"; deleteUI \"mmBonus\"; deleteUI \"mmDock\"; deleteUI \"mmHelp\"; \n";
-	string $c3 = 	"} \n";
-	string $c4 = 	"if ( `dockControl -ex mmDockWindow` ) { \n";
-	string $c5 = 	"	deleteUI mmDockWindow; \n";
-	string $c6 = 	"} \n";
-	string $c7 = 	"else if ( `window -ex materialManagerWindow` ) { \n";
-	string $c8 = 	"	deleteUI materialManagerWindow; \n";
-	string $c9 = 	"} \n";
-	string $c10 = 	"else { evalDeferred(\"" + $nameCommandName + "\"); } \n";
+	string $c0 = 	"proc dp_toggleMaterialManager() {\n";
+	string $c1 = 	"	source dp_materialManager.mel; \n";
+	string $c2 = 	"	if ( `window -ex \"materialManagerWindow\"` ) { \n";
+	string $c3 = 	"		deleteUI \"mmTools\"; deleteUI \"mmSorting\"; deleteUI \"mmCleanup\"; deleteUI \"mmBonus\"; deleteUI \"mmDock\"; deleteUI \"mmHelp\"; \n";
+	string $c4 = 	"	} \n";
+	string $c5 = 	"	if ( `dockControl -ex mmDockWindow` ) { \n";
+	string $c6 = 	"		deleteUI mmDockWindow; \n";
+	string $c7 = 	"	} \n";
+	string $c8 = 	"	else if ( `window -ex materialManagerWindow` ) { \n";
+	string $c9 = 	"		deleteUI materialManagerWindow; \n";
+	string $c10 = 	"	} \n";
+	string $c11 =	"	else { evalDeferred(\"" + $nameCommandName + "\"); } \n";
+	string $c12 = 	"}\n";
+	string $c13 =	"dp_toggleMaterialManager();";
 
-	string $cmd = ( $c0 + $c1 + $c2 + $c3 + $c4 + $c5 + $c6 + $c7 + $c8 + $c9 + $c10 );
+	string $cmd = ( $c0 + $c1 + $c2 + $c3 + $c4 + $c5 + $c6 + $c7 + $c8 + $c9 + $c10 + $c11 + $c12 + $c13 );
 	return $cmd;
 }
 
@@ -2451,7 +2491,7 @@ global proc string[] mm_getMarkedMaterials() {
 
 	//If nothing is marked, check to see if the selection is a material
 	if ( `size $sel` > 0 && `size $marked` == 0 ) {
-		if ( mm_isMaterial($sel[0]) ) { $marked[0] = $sel[0]; }
+		if ( mm_isMaterial($sel[0]) ) { $marked = $sel; }
 	}
 	//If there is still nothing to pick from, look at the selected mesh objects.
 	if ( `size $marked` == 0 ) {
@@ -2465,7 +2505,7 @@ global proc float[] mm_getMaterialColor(string $mat) {
 	string $channel = ($mat + ( mm_getValidChannelName($mat, "color") ));
 	float $col[];
 
-	if ( mm_isValidMaterial($mat) && `objExists $channel` ) { 
+	if ( `objExists $channel` ) { 
 		$col = `getAttr $channel`;
 	}
 	else { $col = { 1.0, 0.6, 0.6 }; }
@@ -3331,6 +3371,7 @@ global proc int mm_isChannelEmpty(string $path) {
 
 
 global proc int mm_isValidMaterial(string $mat) {
+	int $ver = mm_getVersion();
 	//Presently this procedure is called every time a material is created or its color is queried, which mean this list is re-created
 	//every single time.  If I wanted to make this a global database I could include it up at the very top as part of the initialization
 	//code (Line 5) where I also have mm_getConfigData()
@@ -3341,15 +3382,21 @@ global proc int mm_isValidMaterial(string $mat) {
 	if ( `pluginInfo -q -l "cgfxShader.mll"` ) { $types = stringArrayCatenate($types, { "cgfxShader" }); }
 	if ( `pluginInfo -q -l "dx11Shader.mll"` ) { $types = stringArrayCatenate($types, { "dx11Shader" }); }
 	if ( `pluginInfo -q -l "glslShader.mll"` ) { $types = stringArrayCatenate($types, { "GLSLShader" }); }
-	if ( `pluginInfo -q -l "shaderFXPlugin.mll"` && mm_getVersion() > 2015 ) { $types = stringArrayCatenate($types, { "ShaderfxShader", "StingrayPBS" }); }
-	else { $types = stringArrayCatenate($types, { "ShaderfxShader" }); }
-	if ( `pluginInfo -q -l "bitfrostvisplugin.mll"` && mm_getVersion() > 2015 ) { $types = stringArrayCatenate($types, { "bitfrostLiquidMaterial", "bitfrostFoamMaterial", "bitfrostAeroMaterial" }); }
-	else { stringArrayCatenate($types, { "bitfrostLiquidMaterial" }); }
+	if ( `pluginInfo -q -l "shaderFXPlugin.mll"` ) { $types = stringArrayCatenate($types, { "ShaderfxShader", "StingrayPBS" }); }
+	if ( `pluginInfo -q -l "bifrostvisplugin.mll"` ) { $types = stringArrayCatenate($types, { "bifrostLiquidMaterial", "bifrostFoamMaterial", "bifrostAeroMaterial" }); }
+
 	if ( `pluginInfo -q -l "Mayatomr.mll"` ) { $types = stringArrayCatenate($types, { "mdl_material", "mi_car_paint_phen_x", "mi_car_paint_phen_x_passes", "mi_metallic_paint_x", "mi_metallic_paint_x_passes", "mia_material_x", "mia_material_x_passes", "mib_illum_hair", "mib_illum_hair_x", "mib_ptex_lookup", "mila_material", "misss_fast_shader2_x", "misss_fast_shader_x", "misss_fast_shader_x_passes", "misss_fast_simple_maya", "misss_fast_skin_maya", "object_light", "xgen_hair_phen", "xgen_hair_physical" }); }
 	if ( `pluginInfo -q -l "RenderMan_for_Maya.mll"` ) { $types = stringArrayCatenate($types, { "RMSDisplacement", "RMSGPSurface", "RMSGlass", "RMSHair", "RMSHoldOut", "RMSMatte", "RMSOcean", "RMSShaveHair", "RenderManDisplacement", "RenderManShader", "RenderManShaderObject", "RenderManVolume" }); }
+	//turtle materials
 	if ( `pluginInfo -q -l "turtle.mll"` ) { $types = stringArrayCatenate($types, { "ilrAshikhminShader", "ilrBssrdfShader", "ilrDielectricShader" , "ilrHwBakeVisualizer" , "ilrOccSampler" , "ilrOrenNayarShader" }); }
 	//arnold materials
 	if ( `pluginInfo -q -l "mtoa.mll"` ) { $types = stringArrayCatenate($types, { "aiAmbientOcclusion", "aiHair", "aiRaySwitch", "aiShadowCatcher", "aiSkin", "aiStandard", "aiUtility", "aiWireframe" }); }
+	//redshift materials
+	if ( `pluginInfo -q -l "redshift4maya.mll"` ) { $types = stringArrayCatenate($types, { "RedshiftArchitectural", "RedshiftCarPaint", "RedshiftHair", "RedshiftIncandescent", "RedshiftMaterial", "RedshiftMaterialBlender", "RedshiftMatteShadowCatcher", "RedshiftShaderSwitch", "RedshiftSkin", "RedshiftSprite", "RedshiftSubSurfaceScatter" } ); }
+
+	//Catch for special case materials:
+	if ( $ver > 2017 ) { $types = stringArrayRemove( { "aiShadowCatcher" }, $types); }
+	if ( $ver < 2016 ) { $types = stringArrayRemove( { "StingrayPBS", "bifrostFoamMaterial", "bifrostAeroMaterial" }, $types); }
 
 	string $valid[];
 	for ( $type in $types ) {
@@ -4224,18 +4271,20 @@ global proc mm_bindHotkey() {
 	$hotkeyCmd = ( $hotkeyCmd + " -name " + $ncName + ";");
 
 	//Create or switch to selected hotkey set
-	string $hotkeySet = `optionMenu -q -v mm_option_hotkeySet`;
-	string $hotkeySetCmd;
-	if ( $hotkeySet == "*NEW HOTKEY SET" ) { 
-		$hotkeySet = "Maya_Default_Duplicate";
-		$hotkeySetCmd = ( "hotkeySet -source \"Maya_Default\""  + $hotkeySet + "; hotkeySet -e -current " + $hotkeySet + ";" );
-	}
-	else {
-		$hotkeySetCmd = ( "hotkeySet -e -current " + $hotkeySet + ";" );
-	}
+	if ( mm_getVersion() >= 2016 ) {
+		string $hotkeySet = `optionMenu -q -v mm_option_hotkeySet`;
+		string $hotkeySetCmd;
+		if ( $hotkeySet == "*NEW HOTKEY SET" ) { 
+			$hotkeySet = "Maya_Default_Duplicate";
+			$hotkeySetCmd = ( "hotkeySet -source \"Maya_Default\""  + $hotkeySet + "; hotkeySet -e -current " + $hotkeySet + ";" );
+		}
+		else {
+			$hotkeySetCmd = ( "hotkeySet -e -current " + $hotkeySet + ";" );
+		}
 
-	//Create and/or switch to the appropriate hotkey set
-	eval $hotkeySetCmd;
+		//Create and/or switch to the appropriate hotkey set
+		eval $hotkeySetCmd;
+	}
 
 	//Unbind any existing hotkeys
 	hotkey -k $key -n "" -rn "";
