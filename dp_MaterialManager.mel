@@ -1,5 +1,5 @@
-global string $mm_Version = "5.0.3";
-global string $mm_Release = "14 March 2018";
+global string $mm_Version = "5.0.5";
+global string $mm_Release = "20 March 2018";
 global int $mm_scriptJob;
 
 if ( $mm_scriptJob == 0 ) {
@@ -57,8 +57,6 @@ global proc materialManager() {
 			mm_build_tab_baker(); 
 		}
 
-//
-
 	if ( $mm_dk_side == 2 ) { 
 		showWindow $mm_window; 
 		window -e -w $mm_bs_wind $mm_window;
@@ -77,15 +75,9 @@ global proc materialManager() {
 		dockControl -e -w $mm_bs_wind mmDockWindow;
 	}
 
-//
-
-
-/*
-	if ( $mm_dk_side == 2 ) { evalDeferred("mm_setWindowDocking(\"float\")"); }
-	else if ( $mm_dk_side == 0 ) { evalDeferred("mm_setWindowDocking(\"right\")"); }
-	else if ( $mm_dk_side == 1 ) { evalDeferred("mm_setWindowDocking(\"left\")"); }
-*/
-	mm_bk_checkButtonState();
+	if ( ! mm_isMayaLT() ) {
+		mm_bk_checkButtonState();
+	}
 	mm_updateHandedness();
 	mm_updateIndicators();
 
@@ -232,6 +224,16 @@ global proc mm_build_menuItems() {
 	"", 	"",					"divider",										"",				"",
 	"", 	$mm_i_contact_AS,	"Follow me on ArtStation",						"",				"mm_info(20)"
 	};
+
+	//Remove the Color ID Map Baker + extra divider from the array for MayaLT.  
+	//Doing it here is better than having the loop check the version for every single menu item.
+	if ( mm_isMayaLT() ) {
+		int $loc = stringArrayFind("Color ID Map Baker", 0, $menuItemTable);
+		$loc = $loc - 2;
+		for ( $i=0; $i<10; ++$i ) {
+			stringArrayRemoveAtIndex($loc, $menuItemTable);
+		}
+	}
 
 	//This is where the menus get populated
 	int $len = `size $menuItemTable`/5;
@@ -577,9 +579,7 @@ global proc mm_build_tabContainer() {
 		-attachForm		$tabs 			"left"		0
 		-attachForm 	mm_btn_suspend 	"top"		($distance + 24)
 		-attachForm 	mm_btn_suspend 	"left"		8
-		//-attachForm		$tabs 		"right"		0	
 	mm_form_window;
-	// The commented line above makes the tab responsive to the window width, but there's still the problem of the scrollLayout not responding.
 
 	formLayout -w ($mm_bs_wind - 20) -p mm_tab_main mm_form_counters;
 		string $cmd16 = "scrollLayout -w $mm_bs_wind -bv off -p mm_form_counters mm_scroll_main;";
@@ -734,7 +734,6 @@ global proc mm_build_tab_presets() {
 		text -l "Preset Mode:" -w 100 -h 20 txt_assignMode;
 		iconTextButton -style "textOnly" -l $pm_label -w 125 -h 20 -bgc $bgc[0] $bgc[1] $bgc[2] -c "mm_updatePresetMode()" btn_preset_assign;
 		iconTextButton -style "iconOnly" -i "sortName" -w 20 -h 20 -c ("menuItem -e -cb (1-" + $mm_cb_spre + ") menuSortPresets; mm_updateCB(); mm_build_tab_presets()") btn_preset_sort;
-		//expandInfluenceList
 
 		//Build Swatches
 		string $btn; //Leave $btn outside scope so the checker swatch knows what the last color swatch is for -attachControl
@@ -1445,31 +1444,6 @@ global proc mm_deleteMaterial() {
 	mm_build_tab_main();
 }
 
-/*
-global proc mm_detachChannel() {
-	global string $mm_assigned[];
-
-	if ( `size $mm_assigned` > 1 ) { mm_checkForMultipleMaterials("detach", $mm_assigned, "transparency"); return; }
-
-	string $pickedMat = $mm_assigned[0];
-	string $pathT = mm_getValidChannelName($pickedMat, "transparency");
-	string $pathC = mm_getValidChannelName($pickedMat, "color");
-
-
-	if ( $pathT == "none" || $pathC == "none" ) { print "No transparency channel to detach.\n"; return; }
-
-	string $colorInput[] = `listConnections ($pickedMat + $pathC)`;
-	string $transpInput[] = `listConnections ($pickedMat + $pathT)`;
-
-	if ( $colorInput[0] == $transpInput[0] ) {
-		disconnectAttr ($transpInput[0] + ".outTransparency") ($pickedMat + $pathT);
-	}
-	else {
-		mm_removeConnections($pickedMat + $pathT);
-		print "Color and Transparency channels are different maps.  Deleting Transparency channel connections instead.\n";
-	}
-}
-*/
 
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
@@ -1603,7 +1577,6 @@ global proc mm_removeOrphans() {
 	//if ( $mc[0] != "" ) {
 		string $cc[] = mm_removeNonDeletableNodes( stringArrayRemoveDuplicates(`listConnections $mc`) ); 
 		string $remove[] = stringArrayRemove($cc, $allNodes);
-		warning $remove;
 		$remove = stringArrayRemove($mc, $remove);
 		delete $remove;
 	//}
@@ -2245,26 +2218,20 @@ global proc mm_toEdgePerimeter() {
 global proc string mm_getInitializeCode(string $nameCommandName) {
 	if ( $nameCommandName == "" ) { $nameCommandName = "materialManager;"; }
 
-//eval(\"pause -sec 0;\");\n\
-	string $cmd = (
-"source dp_materialManager.mel;\n\
-if ( `window -ex \"materialManagerWindow\"` ) {\n\
-	deleteUI \"mmTools\";\n\
-	deleteUI \"mmSorting\";\n\
-	deleteUI \"mmCleanup\";\n\
-	deleteUI \"mmBonus\";\n\
-	deleteUI \"mmDock\";\n\
-	deleteUI \"mmHelp\";\n\
-}\n\
-if ( `dockControl -ex mmDockWindow` ) {\n\
-	deleteUI mmDockWindow; \n\
-}\n\
-else if ( `window -ex materialManagerWindow` ) {\n\
-	deleteUI materialManagerWindow; \n\
-}\n\
-else { evalDeferred(\"" + $nameCommandName + "\"); } \n\
-");
+	//This sequence of strings has been set up as an alternative to escaped line breaks within a string.  Escaped line breaks seem to create an error on Mac OS.
+	string $c0 = 	"source dp_materialManager.mel; \n";
+	string $c1 = 	"if ( `window -ex \"materialManagerWindow\"` ) { \n";
+	string $c2 = 	"	deleteUI \"mmTools\"; deleteUI \"mmSorting\"; deleteUI \"mmCleanup\"; deleteUI \"mmBonus\"; deleteUI \"mmDock\"; deleteUI \"mmHelp\"; \n";
+	string $c3 = 	"} \n";
+	string $c4 = 	"if ( `dockControl -ex mmDockWindow` ) { \n";
+	string $c5 = 	"	deleteUI mmDockWindow; \n";
+	string $c6 = 	"} \n";
+	string $c7 = 	"else if ( `window -ex materialManagerWindow` ) { \n";
+	string $c8 = 	"	deleteUI materialManagerWindow; \n";
+	string $c9 = 	"} \n";
+	string $c10 = 	"else { evalDeferred(\"" + $nameCommandName + "\"); } \n";
 
+	string $cmd = ( $c0 + $c1 + $c2 + $c3 + $c4 + $c5 + $c6 + $c7 + $c8 + $c9 + $c10 );
 	return $cmd;
 }
 
@@ -2511,7 +2478,7 @@ global proc string[] mm_getInstances(string $obj) {
 	string $models[];
 	if ( mm_isInstance($obj) ) {
 		string $shapes[] = mm_getShapes($obj);
-		$models = `listRelatives -ap $shapes[0]`;
+		$models = `listRelatives -f -ap $shapes[0]`;
 		if ( mm_isComponent($obj) ) {
 			//If the instanced object is a component, use the models list to re-associate the component index to each model
 			string $instancedComponents[];
@@ -2628,32 +2595,32 @@ global proc mm_getConfigData() {
 		}
 	}
 	else {
-		string $cmd = " \
-		global int $mm_rb_crono = 0; \
-		global int $mm_cb_sass = 0; \
-		global int $mm_cb_snap = 1; \
-		global int $mm_cb_spre = 1; \
-		global int $mm_cb_bann = 1; \
-		global int $mm_cb_part = 0; \
-		global int $mm_cb_inst = 1; \
-		global int $mm_cb_cind = 1; \
-		global int $mm_cb_find = 0; \
-		global int $mm_cb_appm = 1; \
-		global int $mm_bk_width = 2048; \
-		global int $mm_bk_height = 2048; \
-		global int $mm_bk_dilation = 16; \
-		global int $mm_bs_name = 25; \
-		global int $mm_bs_wind = 325; \
-		global int $mm_pr_mode = 1; \
-		global int $mm_dk_side = 2; \
-		global string $mm_load_baseColor = \"_A\"; \
-		global string $mm_load_normal = \"_N\"; \
-		global string $mm_load_specular = \"_S\"; \
-		global string $mm_load_metallic = \"_M\"; \
-		global string $mm_load_roughness = \"_R\"; \
-		global string $mm_load_emissive = \"_E\"; \
-		global string $mm_load_opacity = \"_O\"; \
-		";
+		//This sequence of strings has been set up as an alternative to escaped line breaks within a string, a method that creates an error on Mac OS.
+		string $c00 = "global int $mm_rb_crono = 0; ";
+		string $c01 = "global int $mm_cb_sass = 0; ";
+		string $c02 = "global int $mm_cb_snap = 1; ";
+		string $c03 = "global int $mm_cb_spre = 1; ";
+		string $c04 = "global int $mm_cb_bann = 1; ";
+		string $c05 = "global int $mm_cb_part = 0; ";
+		string $c06 = "global int $mm_cb_inst = 1; ";
+		string $c07 = "global int $mm_cb_cind = 1; ";
+		string $c08 = "global int $mm_cb_find = 0; ";
+		string $c09 = "global int $mm_cb_appm = 1; ";
+		string $c10 = "global int $mm_bk_width = 2048; ";
+		string $c11 = "global int $mm_bk_height = 2048; ";
+		string $c12 = "global int $mm_bk_dilation = 16; ";
+		string $c13 = "global int $mm_bs_name = 25; ";
+		string $c14 = "global int $mm_bs_wind = 325; ";
+		string $c15 = "global int $mm_pr_mode = 1; ";
+		string $c16 = "global int $mm_dk_side = 2; ";
+		string $c17 = "global string $mm_load_baseColor = \"_A\"; ";
+		string $c18 = "global string $mm_load_normal = \"_N\"; ";
+		string $c19 = "global string $mm_load_specular = \"_S\"; ";
+		string $c20 = "global string $mm_load_metallic = \"_M\"; ";
+		string $c21 = "global string $mm_load_roughness = \"_R\"; ";
+		string $c22 = "global string $mm_load_emissive = \"_E\"; ";
+		string $c23 = "global string $mm_load_opacity = \"_O\"; ";
+		string $cmd = ( $c00 + $c01 + $c02 + $c03 + $c04 + $c05 + $c06 + $c07 + $c08 + $c09 + $c10 + $c11 + $c12 + $c13 + $c14 + $c15 + $c16 + $c17 + $c18 + $c19 + $c20 + $c21 + $c22 + $c23 );
 		mm_warn("mm_config.txt file not found.  Loading backup settings.");
 		eval $cmd;
 	}
@@ -2960,40 +2927,6 @@ global proc mm_changeDocking(int $state) {
 	$mm_dk_side = $state;
 	evalDeferred("materialManager;");
 }
-
-/*
-global proc mm_setWindowDocking(string $side) {
-	global string $mm_Version;
-	global string $mm_window;
-	global int $mm_bs_wind;
-	global int $mm_dk_side;
-
-	//Set docking logic for every time window opens, it knows where to go
-	if ( $side == "left" ) { 
-		$mm_dk_side = 1; 
-		mm_deleteUI("menuDockLeft");
-	}
-	else if ( $side == "right" ) { 
-		$mm_dk_side = 0; 
-		mm_deleteUI("menuDockRight");
-	}
-	else { 
-		$mm_dk_side = 2; 
-		mm_deleteUI("menuDockFloat");
-	}
-
-	if ( $side != "float" ) {
-		string $cmd = ("dockControl -content " + $mm_window + " -area " + $side + "-allowedArea \"left\" -allowedArea \"right\" -label (\"MM v" + $mm_Version + "\") -fl 0 -vis 0 mmDockWindow;");
-		eval($cmd);
-
-		dockControl -e -w $mm_bs_wind mmDockWindow;
-	}
-	else {
-		evalDeferred("showWindow " + $mm_window);
-		window -e -w $mm_bs_wind $mm_window;
-	}
-}
-*/
 
 
 global proc mm_updateFrameLayout(int $checkLargeSel) {
@@ -3364,7 +3297,7 @@ global proc mm_suspendIndicators() {
 
 
 global proc int mm_isMayaLT() {
-	string $info = `about -v`;
+	string $info = `about -p`;
 	if ( mm_has($info, "LT") ) { return 1; }
 	else { return 0; }
 }
@@ -3398,6 +3331,10 @@ global proc int mm_isChannelEmpty(string $path) {
 
 
 global proc int mm_isValidMaterial(string $mat) {
+	//Presently this procedure is called every time a material is created or its color is queried, which mean this list is re-created
+	//every single time.  If I wanted to make this a global database I could include it up at the very top as part of the initialization
+	//code (Line 5) where I also have mm_getConfigData()
+	
 	string $types[] = { "oceanShader", "rampShader", "fluidShape", "phong", "phongE", "blinn", "anisotropic", "useBackground", "hairTubeShader", "layeredShader", "surfaceShader", "shadingMap" };
 	if ( ! mm_isMayaLT() ) { $types = stringArrayCatenate($types, { "lambert" }); }
 	//Add more material types here if there are other plugins you use
@@ -3459,15 +3396,6 @@ global proc int mm_isComponent(string $obj) {
 	else { return 1; }
 }
 
-/*
-global proc int mm_isGroup(string $obj) {
-	if ( `objectType -i "transform" $obj` ) {
-		string $meshes[] = `listRelatives -type "mesh" $obj`;
-		if ( $meshes[0] == "" ) { return 1; }
-	}
-	return 0;
-}
-*/
 
 global proc int mm_hasMeshComponents(string $list[]) {
 	string $transforms[] = `ls -l -type "transform"`;
@@ -3941,28 +3869,19 @@ global proc mm_bk_bake() {
 	$split = mm_split($mm_bk_path, ".");
 	$path = $split[0];
 
-	//Main command for executing the bake
-	string $cmd = "surfaceSampler \
-		-uvSet map1 \
-		-searchOffset 0 \
-		-maxSearchDistance 20 \
-		-mapOutput diffuseRGB \
-		-mapWidth " + $mm_bk_width + " \
-		-mapHeight " + $mm_bk_height + " \
-		-max 1 \
-		-mapSpace tangent \
-		-mapMaterials 1 \
-		-shadows 0 \
-		-filename \"" + $path + "\" \
-		-fileFormat " + $mm_bk_format + " \
-		-superSampling 1 \
-		-filterSize 0 \
-		-overscan " + $mm_bk_dilation + " \
-		-searchMethod 0 \
-		-useGeometryNormals 0 \
-		-ignoreMirroredFaces 0 \
-		-flipU 0 -flipV 0 \
-	";
+	//Main command for executing the bake.
+	//This sequence of strings has been set up as an alternative to escaped line breaks within a string, a method that creates an error on Mac OS.
+	string $c0 = ( "surfaceSampler -uvSet map1 " );
+	string $c1 = ( "-searchOffset 0 -maxSearchDistance 20 " );
+	string $c2 = ( "-mapOutput diffuseRGB -mapWidth " + $mm_bk_width + " " );
+	string $c3 = ( "-mapHeight " + $mm_bk_height + " -max 1 " );
+	string $c4 = ( "-mapSpace tangent -mapMaterials 1 -shadows 0 " );
+	string $c5 = ( "-filename \"" + $path + "\" " );
+	string $c6 = ( "-fileFormat " + $mm_bk_format + " " );
+	string $c7 = ( "-superSampling 1 -filterSize 0 " );
+	string $c8 = ( "-overscan " + $mm_bk_dilation + " " );
+	string $c9 = ( "-searchMethod 0 -useGeometryNormals 0 -ignoreMirroredFaces 0 -flipU 0 -flipV 0;");
+	string $cmd = ( $c0 + $c1 + $c2 + $c3 + $c4 + $c5 + $c6 + $c7 + $c8 + $c9 );
 
 	//Add HP meshes to command string
 	string $sources[] = mm_split($mm_bk_hp, ", ");
@@ -4228,8 +4147,6 @@ global proc mm_bindHotkeyWindow() {
 
 	$bgc = mm_getButtonColor("near black");
 	textField -tx "m" -bgc $bgc[0] $bgc[1] $bgc[2] -rfc "textField -e -tx \"\" mm_field_hotkey_key;" mm_field_hotkey_key;
-
- 	//iconTextButton -style "iconAndTextCentered" -l "Bind It" -w ( $mm_bs_wind/3 ) -h 40 -bgc .115 .357 .5 -c "mm_bindHotkey();" mm_btn_hotkey_bind;
  	iconTextButton -style "iconAndTextCentered" -l "Cancel" -w ( $mm_bs_wind/3 ) -h 20 -bgc $bgc[0] $bgc[1] $bgc[2] -c "mm_clearInfo();" mm_btn_hotkey_cancel;
 
  	$bgc = mm_getButtonColor("green");
