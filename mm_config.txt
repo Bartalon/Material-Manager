@@ -59,6 +59,14 @@ VALUE:0
 ID:mm_cb_part
 
 
+//  When clicking on a nameplate, creating a quick material, or assigning a material, that material will display in the Attribute Editor.
+//  Menu Location:  Bonus Tools > Sort Assigned Materials First
+//  	0  -  Do not open the attribute editor
+//  	1  -  Open the Attribute Editor when necessary
+VALUE:1
+ID:mm_cb_attr
+
+
 //  Assigning materials to your selection also assigns those materials to any existing instanced meshes
 //  Menu Location:  Bonus Settings > Apply Assigned Materials to Instances
 //  	0  -  Do not assign to instances
@@ -90,7 +98,7 @@ ID:mm_cb_find
 //  Menu Location:  Bonus Settings > Auto-append "M_" to New Materials
 //  	0  -  Do not append (default)
 //  	1  -  Append M_ to new materials
-VALUE:1
+VALUE:0
 ID:mm_cb_appm
 
 
@@ -217,6 +225,10 @@ VALUE:_O
 ID:mm_load_opacity
 
 
-
+//  This suffix will be used when searching for the AMBIENT OCCLUSION channel inside the designated folder
+//  when using the Load Files from Folder tool.  The default suffix is _AO
+//
+VALUE:_AO
+ID:mm_load_occlusion
 
 
