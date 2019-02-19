@@ -1,0 +1,214 @@
+//  PLEASE READ:  About this File:
+//    This file contains all the global settings of the Material Manager.  
+//    You can configure how MM5 behaves when you open it by changing the number adjacent to the VALUE: line.
+//    When adjusting the values, ensure there are no spaces.
+//    Do not modify the ID: line!
+//	  Do not change the order of the entries!
+//    
+//  Additionally, all these settings are adjustable within Maya if you need to toggle between them.  
+//    Any changes using the settings within Maya will reset next time you open Maya.  If you want a setting to remain permanently, change the values in this file.
+
+
+
+
+//  Sort existing scene materials (listed in the Current Scene tab)
+//  Menu Location:  Sorting > Sort Materials Alphabetically\Chronologically
+//  	0  -  Alphabetically (default)
+//  	1  -  Chronologically
+VALUE:0
+ID:mm_rb_crono
+
+
+//  Materials assigned to your selection will always appear at the top of the list in the Current Scene tab.
+//  Menu Location:  Sorting > Sort Assigned Materials First
+//  	0  -  Do not sort at the top (default)
+//  	1  -  Sort assigned materials at the top
+VALUE:0
+ID:mm_cb_sass
+
+
+//  Snap the Material List scroll bar to the top when selecting a single material using the name plates in the Material List.
+//  Menu Location:  Sorting > Sort Assigned: Snap to top with one material
+//  	0  -  Scroll bar will stay where it is until moved by the user
+//  	1  -  Scroll bar will snap to top of list automatically when selecting a single material (default)
+VALUE:1
+ID:mm_cb_snap
+
+
+//  Sort color presets top to bottom either by each column or alternating between columns on the way down.
+//  Menu Location:  Sorting > Sort Presets by Columns
+//  	1  -  By each column (default)
+//  	2  -  Alternating between columns
+VALUE:1
+ID:mm_cb_spre
+
+
+//  Display the banner area (Material Manager 5 graphic and Import/Export buttons)
+//  Menu Location:  Bonus Settings > Show Banner Section
+//  	0  -  Hide banner area
+//  	1  -  Show banner area (default)
+VALUE:1
+ID:mm_cb_bann
+
+
+//  Include particleCloud objects in material list
+//  Menu Location:  Bonus Settings > Include particleCloud Materials
+//  	0  -  Omit (default)
+//  	1  -  Include
+VALUE:0
+ID:mm_cb_part
+
+
+//  Assigning materials to your selection also assigns those materials to any existing instanced meshes
+//  Menu Location:  Bonus Settings > Apply Assigned Materials to Instances
+//  	0  -  Do not assign to instances
+//  	1  -  Assign to instances (default)
+VALUE:1
+ID:mm_cb_inst
+
+
+//  The nameplates will turn blue for any material assigned to your selection, from groups, to models, to polygons.
+//  You can choose to disable component-level indication so the indicators always show everything that is assigned to the model.
+//  Menu Location:  Bonus Settings > Per-component Material Indication
+//  	0  -  Ignore component-level selections and always indicate everything that is assigned to the model
+//  	1  -  Indicators will update normally based on your selection (default)
+VALUE:1
+ID:mm_cb_cind
+
+
+//  When using the Match Material button, MM5 will search for and select all surfaces to which your marked materials are assigned.
+//  You can change this setting to only select surfaces from your initial selection rather than the entire scene.  
+//  This is set off by default because cross-referencing to your selection can be a much slower operation.
+//  Menu Location:  Bonus Settings > Match Material on Selection Only
+//  	0  -  Scene-wide (default)
+//  	1  -  Limit to your selection
+VALUE:0
+ID:mm_cb_find
+
+
+//  When creating new materials and presets add an M_ prefix automatically.
+//  Menu Location:  Bonus Settings > Auto-append "M_" to New Materials
+//  	0  -  Do not append (default)
+//  	1  -  Append M_ to new materials
+VALUE:1
+ID:mm_cb_appm
+
+
+//  Set the starting map width for the ID Map Baker when MM5 opens.
+//  Tab Location:  ID Map Baker > Map Width
+//  	128   -  Minimum width
+//  	2048  -  Default width
+//  	32768 -  Maximum width
+VALUE:2048
+ID:mm_bk_width
+
+
+//  Set the starting map height for the ID Map Baker when MM5 opens.
+//  Tab Location:  ID Map Baker > Map Height
+//  	128   -  Minimum height
+//  	2048  -  Default height
+//  	32768 -  Maximum height
+VALUE:2048
+ID:mm_bk_height
+
+
+//  Set the starting dilation distance for the ID Map Baker when MM5 opens.
+//  Tab Location:  ID Map Baker > Dilation
+//  	2   -  Minimum distance
+//  	16  -  Default distance
+//  	128 -  Maximum distance
+VALUE:16
+ID:mm_bk_dilation
+
+
+//  Set the name plate height for the materials in the Current Scene tab list
+//  Menu Location:  Bonus Settings > Change Name Plate Size
+//  	10  -  Minimum size
+// 		25  -  Default size
+//  	50  -  Maximum size
+VALUE:25
+ID:mm_bs_name
+
+
+//  Set the width of the Material Manager window
+//  Menu Location:  Bonus Settings > Change Window Width
+//  	325  -  Minimum size (also default)
+// 		600  -  Maximum size
+VALUE:325
+ID:mm_bs_wind
+
+
+//  When creating a preset, you can have MM5 either add it to the scene only, or assign it to your current selection
+//  Tab Location:  Color Presets > Preset Mode button (the blue button)
+//  	0  -  Add to scene only
+//  	1  -  Create & assign to selection (default)
+VALUE:1
+ID:mm_pr_mode
+
+
+//  Determine the starting location of the Material Manager window.  It can be floating or docked to the left or right.
+//  A floating window will always remember its last location prior to being closed.
+//  Menu Location:  Dock > Dock Left,  Dock > Dock Right,  Dock > Floating Window
+//  	0  -  Docked Right
+//  	1  -  Docked Left
+//  	2  -  Floating window (default)
+VALUE:2
+ID:mm_dk_side
+
+
+/////////////////////////////////////////////////////////
+//  Texture suffix definitions for auto-loading files  //
+/////////////////////////////////////////////////////////
+//
+//  This suffix will be used when searching for the DIFFUSE / ALBEDO / BASECOLOR channel inside the designated folder
+//  when using the Load Files from Folder tool.  The default suffix is _A (for albedo)
+//
+VALUE:_A
+ID:mm_load_baseColor
+
+
+//  This suffix will be used when searching for the NORMAL channel inside the designated folder
+//  when using the Load Files from Folder tool.  The default suffix is _N
+//
+VALUE:_N
+ID:mm_load_normal
+
+
+//  This suffix will be used when searching for the SPECULAR COLOR channel inside the designated folder
+//  when using the Load Files from Folder tool.  The default suffix is _S
+//
+VALUE:_S
+ID:mm_load_specular
+
+
+//  This suffix will be used when searching for the METALLIC channel inside the designated folder
+//  when using the Load Files from Folder tool.  The default suffix is _M
+//
+VALUE:_M
+ID:mm_load_metallic
+
+
+//  This suffix will be used when searching for the ROUGHNESS channel inside the designated folder
+//  when using the Load Files from Folder tool.  The default suffix is _R
+//
+VALUE:_R
+ID:mm_load_roughness
+
+
+//  This suffix will be used when searching for the EMISSIVE channel inside the designated folder
+//  when using the Load Files from Folder tool.  The default suffix is _E
+//
+VALUE:_E
+ID:mm_load_emissive
+
+
+//  This suffix will be used when searching for the OPACITY channel inside the designated folder
+//  when using the Load Files from Folder tool.  The default suffix is _O
+//
+VALUE:_O
+ID:mm_load_opacity
+
+
+
+
+
