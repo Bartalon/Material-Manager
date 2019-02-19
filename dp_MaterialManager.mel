@@ -20,7 +20,7 @@ if ( $mm_scriptJob == 0 ) {
 	source AEmeshTemplate.mel;
 	source dagMenuProc.mel;
 	source showEditor.mel;
-	loadPlugin -qt shaderFXPlugin.mll;
+	catchQuiet ( `loadPlugin -qt shaderFXPlugin.mll` );
 }
 
 
@@ -57,12 +57,34 @@ global proc materialManager() {
 			mm_build_tab_baker(); 
 		}
 
-	pause -sec 0;
+//
 
-	if ( $mm_dk_side == 2 ) { mm_setWindowDocking("float"); }
-	else if ( $mm_dk_side == 0 ) { mm_setWindowDocking("right"); }
-	else if ( $mm_dk_side == 1 ) { mm_setWindowDocking("left"); }
+	if ( $mm_dk_side == 2 ) { 
+		showWindow $mm_window; 
+		window -e -w $mm_bs_wind $mm_window;
+		mm_deleteUI("menuDockFloat");
+	}
+	else {
+		string $side = "right";
+		if ( $mm_dk_side == 1 ) { 
+			$side = "left";
+			mm_deleteUI("menuDockLeft");
+		}
+		else { mm_deleteUI("menuDockRight");; }
 
+		dockControl -content $mm_window -area $side -allowedArea "left" -allowedArea "right" -label ("MM v" + $mm_Version) -fl 0 -vis 0 mmDockWindow;
+		evalDeferred("dockControl -e -vis 1 mmDockWindow");
+		dockControl -e -w $mm_bs_wind mmDockWindow;
+	}
+
+//
+
+
+/*
+	if ( $mm_dk_side == 2 ) { evalDeferred("mm_setWindowDocking(\"float\")"); }
+	else if ( $mm_dk_side == 0 ) { evalDeferred("mm_setWindowDocking(\"right\")"); }
+	else if ( $mm_dk_side == 1 ) { evalDeferred("mm_setWindowDocking(\"left\")"); }
+*/
 	mm_bk_checkButtonState();
 	mm_updateHandedness();
 	mm_updateIndicators();
@@ -193,9 +215,9 @@ global proc mm_build_menuItems() {
 																																
 	//Dock	 																													
 	"M", 	"",					"Dock",											"mmDock",		"",
-	"", 	"",					"Dock Left_",									$mm_d_left,		"$mm_dk_side = 1; materialManager();",
-	"", 	"",					"Dock Right_",									$mm_d_right,	"$mm_dk_side = 0; materialManager();",
-	"", 	"",					"Floating Window_",								$mm_d_float,	"$mm_dk_side = 2; materialManager();",
+	"", 	"",					"Dock Left_",									$mm_d_left,		"mm_changeDocking(1);",
+	"", 	"",					"Dock Right_",									$mm_d_right,	"mm_changeDocking(0);",
+	"", 	"",					"Floating Window_",								$mm_d_float,	"mm_changeDocking(2);",
 																																
 	//Help 																														
 	"M", 	"",					"Help",											"mmHelp",		"",
@@ -2223,9 +2245,9 @@ global proc mm_toEdgePerimeter() {
 global proc string mm_getInitializeCode(string $nameCommandName) {
 	if ( $nameCommandName == "" ) { $nameCommandName = "materialManager;"; }
 
+//eval(\"pause -sec 0;\");\n\
 	string $cmd = (
 "source dp_materialManager.mel;\n\
-eval(\"pause -sec 0;\");\n\
 if ( `window -ex \"materialManagerWindow\"` ) {\n\
 	deleteUI \"mmTools\";\n\
 	deleteUI \"mmSorting\";\n\
@@ -2233,16 +2255,15 @@ if ( `window -ex \"materialManagerWindow\"` ) {\n\
 	deleteUI \"mmBonus\";\n\
 	deleteUI \"mmDock\";\n\
 	deleteUI \"mmHelp\";\n\
-	if ( `dockControl -ex mmDockWindow` ) {\n\
-		deleteUI mmDockWindow;\n\
-	}\n\
 }\n\
-evalDeferred(\"\\\n\
-	if ( `window -ex \\\"materialManagerWindow\\\"` ) { \\\n\
-		deleteUI \\\"materialManagerWindow\\\"; \\\n\
-	} \\\n\
-	else { evalDeferred(\\\"" + $nameCommandName + "\\\"); } \\\n\
-\");");
+if ( `dockControl -ex mmDockWindow` ) {\n\
+	deleteUI mmDockWindow; \n\
+}\n\
+else if ( `window -ex materialManagerWindow` ) {\n\
+	deleteUI materialManagerWindow; \n\
+}\n\
+else { evalDeferred(\"" + $nameCommandName + "\"); } \n\
+");
 
 	return $cmd;
 }
@@ -2409,7 +2430,7 @@ global proc string[] mm_getAssignedMaterials() {
 	if ( ! $mm_cb_cind ) {
 		string $models[] = mm_filterModels($sel);
 		string $components[] = stringArrayRemove($models, $sel);
-		if ( $components[0] != "" ) { $sel = `listRelatives -ap -ni`; }
+		if ( $components[0] != "" ) { $sel = `listRelatives -f -ap -ni`; }
 	}
 
 	string $allSets[];
@@ -2424,7 +2445,7 @@ global proc string[] mm_getAssignedMaterials() {
 		else { $assignedMats[0] = $sel[0]; }
 	}
 	else {
-		string $rel[] = `listRelatives $sel`;
+		string $rel[] = `listRelatives -f $sel`;
 		string $shapes[] = `ls -type "shape" $rel`;
 		$sel = stringArrayCatenate($sel, $rel);
 		$sel = stringArrayRemove($shapes, $sel);
@@ -2809,7 +2830,7 @@ global proc string mm_getHandedness() {
 		$item = $longName[0];
 		if ( mm_isComponent($item) ) { $item = mm_getParent($item); }
 		if ( mm_isModel($item) ) {
-			string $shape[] = `listRelatives -s $item`;
+			string $shape[] = `listRelatives -f -s $item`;
 			if ( `objExists $shape[0]` ) {
 				$handedness[`size $handedness`] = ((string)`getAttr ($shape[0] + ".tangentSpace")`);
 			}
@@ -2934,6 +2955,13 @@ global proc mm_closeHypershade(string $event) {
 }
 
 
+global proc mm_changeDocking(int $state) {
+	global int $mm_dk_side;
+	$mm_dk_side = $state;
+	evalDeferred("materialManager;");
+}
+
+/*
 global proc mm_setWindowDocking(string $side) {
 	global string $mm_Version;
 	global string $mm_window;
@@ -2955,24 +2983,17 @@ global proc mm_setWindowDocking(string $side) {
 	}
 
 	if ( $side != "float" ) {
-		dockControl 
-			-content $mm_window
-			-area $side
-			-allowedArea "left"
-			-allowedArea "right"
-			-label ("MM v" + $mm_Version)
-			-fl 0
-			-vis 0
-		mmDockWindow;
+		string $cmd = ("dockControl -content " + $mm_window + " -area " + $side + "-allowedArea \"left\" -allowedArea \"right\" -label (\"MM v" + $mm_Version + "\") -fl 0 -vis 0 mmDockWindow;");
+		eval($cmd);
 
-		evalDeferred("dockControl -e -vis 1 mmDockWindow");
 		dockControl -e -w $mm_bs_wind mmDockWindow;
 	}
 	else {
-		showWindow $mm_window;
+		evalDeferred("showWindow " + $mm_window);
 		window -e -w $mm_bs_wind $mm_window;
 	}
 }
+*/
 
 
 global proc mm_updateFrameLayout(int $checkLargeSel) {
@@ -4303,7 +4324,8 @@ global proc mm_bindHotkey() {
 	hotkey -k $key -n "" -rn "";
 
 	eval $hotkeyCmd;
-	SavePreferences;
+	evalDeferred("SavePreferences;");
+	
 	mm_updateFrameLayout(0);
 	mm_build_tab_main();
 }
