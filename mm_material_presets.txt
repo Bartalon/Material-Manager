@@ -1,63 +1,15 @@
 //  PLEASE READ:  About this File:
 //    In order to ensure this file is read properly by the Material Manager, here is what you can and can't do:
 //    
-//    1)  Any line starting with a // will be ignored.  You can feel free to add comments like this if you need to
+//    1)  Any line starting with a // will be ignored.  You can feel free to add comments like this if you need to, or temporarily disable presets from appearing in the list.
 //    2)  Material ID Swatches list must always come before Material Presets list.  So, how you see them below.
-//    4)  The order of each list can be re-arranged.  Presently the Swatches are ordered from primary to quaternary, while Presets are alphabetical.
+//    3)  The order of each list can be re-arranged.  Presently the Swatches are ordered from primary to quaternary, while Presets are alphabetical.
 //          This means you can move frequently used Presets to the top of the list, or add new colors to your swatches.
-//    5)  Swatch and Presets entries can be moved to the other respecitve list and they will show up properly.
-//    6)  The alignment of the values in each column are aesthetic only.  As long as you have at least one space between each column, everything should work as intended.
-//    7)  Material Names CANNOT have spaces.
-//    8)  Decimals beyond 6 places will be rounded off.
-//    9)  Do not add any information between the last swatch entry and the //Material Presets line.
-//	  10) Material Types are case sensitive.  You will get an invalid or unsupported warning if the Material Type isn't exact.
-//
-//
-//  Valid material names list:
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//  MAYA BUILT IN:  	phong 				lambert 					oceanShader 			fluidShape			useBackground
-//						phongE 				layeredShader						 			 	hairTubeShader		shadingMap
-//						blinn 				anisotropic 				surfaceShader
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//  DEFAULT PLUGINS: 	cgfxShader 			dx11Shader 					GLSLShader 				ShaderfxShader 		StingrayPBS (2016+)			bitfrostLiquidMaterial
-// 																																				bitfrostFoamMaterial (2016+)
-//																																				bitfrostAeroMaterial (2016+)
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//  RENDERMAN:			RMSDisplacement 	RMSShaveHair				RMSHoldOut 				RMSOcean 			RenderManShader 			RenderManVolume
-//						RMSGPSurface		RMSHair 					RMSMatte				RMSGlass 			RenderManShaderObject 		RenderManDisplacement
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//  MENTAL RAY:			mdl_material		mi_car_paint_phen_x 	 	mia_material_x 			mib_illum_hair		misss_fast_simple_maya
-//						mila_material		mi_car_paint_phen_x_passes	mia_material_x_passes 	mib_illum_hair_x 	misss_fast_skin_maya
-//						object_light		mi_metallic_paint_x									mib_ptex_lookup 	misss_fast_shader2_x
-//						xgen_hair_phen		mi_metallic_paint_x_passes												misss_fast_shader_x 
-//						xgen_hair_physical																			misss_fast_shader_x_passes
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//  ARNOLD: 			aiAmbientOcclusion 	aiComplexIor				aiCarPaint				aiHair 				aiSwitch
-//						aiStandardSurface	aiCurvature 				aiMixShader				aiStandardHair		aiRaySwitch
-//						aiStandard 			aiUtility 					aiShadowMatte			aiSkin 				aiThinFilm
-//						aiWireframe			aiFlat 																	aiTwoSided
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//  VRAY: 				VRayAISurface 		VRayFlakesMtl  				VRayMtlGLSL 			VRayMtlWrapper 			VRayStochasticFlakesMtl 	VRayScatterFog 
-//						VRayBlendMtl 		VRayLightMtl 				VRayMtlHair3 			VRayPointParticleMtl 	VRaySwitchMtl 				VRaySimpleFog 
-//						VRayBumpMtl 		VRayMeshMaterial 			VRayMtlMDL 				VRayScannedMtl 			VRayVRmatMtl 				VRaySphereFadeVolume
-//						VRayCarPaintMtl 	VRayMtl 					VRayMtlOSL 				VRaySimbiont 			VRayAerialPerspective 
-//						VRayFastSSS2 		VRayMtl2Sided 				VRayMtlRenderStats 		VRaySkinMtl 			VRayEnvironmentFog 
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//  REDSHIFT: 			RedshiftHair 			RedshiftCarPaint 			RedshiftArchitectural 			RedshiftIncandescent
-// 						RedshiftMaterial 		RedshiftMaterialBlender		RedshiftMatteShadowCatcher		RedshiftShaderSwitch
-//						RedshiftSkin			RedshiftSprite				RedshiftSubSurfaceScatter
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//  The valid material names above are populated on a per-version and per-plugin basis.  If your version of maya is missing a plugin, the materials associated with
-//  that plugin will not be part of the valid material list.  A material's validity is checked using the function mm_isValidMaterial() and is called when
-//  assigning a preset or when a a material's color channel is being queried (whenever the Material List indicators update or the Current Scene tab is rebuilt)
+//    4)  Swatch and Presets entries can be moved to the other respecitve list and they will show up properly.
+//    5)  The alignment of the values in each column are aesthetic only.  As long as you have at least one space between each column, everything should work as intended.
+//    6)  Material Names CANNOT have spaces.
+//    7)  Decimals beyond 6 places will be rounded off.
+//	  8)  Material Types are case sensitive.  You will get an invalid or unsupported warning if the Material Type isn't exact.
 //
 //
 //	How it works (for you people who want to tinker with the code):
@@ -75,79 +27,76 @@
 
 
 //Material ID Swatches
-//Material Name		Color R 	Color G		Color B		Spec R 		Spec G 		Spec B		Cosine Pwr 	Material Type
 
-Solid_Red			1.0			0.0			0.0			0.0			0.0			0.0			2.0			phong
-Solid_Green			0.0			1.0			0.0			0.0			0.0			0.0			2.0			phong
-Solid_Blue			0.0			0.0			1.0			0.0			0.0			0.0			2.0			phong
-Solid_White			1.0			1.0			1.0			0.0			0.0			0.0			2.0			phong
-Solid_Cyan			0.0			1.0			1.0			0.0			0.0			0.0			2.0			phong
-Solid_Magenta		1.0			0.0			1.0			0.0			0.0			0.0			2.0			phong
-Solid_Yellow		1.0			1.0			0.0			0.0			0.0			0.0			2.0			phong
-Solid_Black			0.0			0.0			0.0			0.0			0.0			0.0			2.0			phong
-Solid_Orange		1.0			0.5			0.0			0.0			0.0			0.0			2.0			phong
-Solid_Pink			1.0			0.5			0.5			0.0			0.0			0.0			2.0			phong
-Solid_Normal		0.5			0.5			1.0			0.0			0.0			0.0			2.0			phong
-Solid_Purple		0.5			0.0			1.0			0.0			0.0			0.0			2.0			phong
-Half_Red			0.5			0.0			0.0			0.0			0.0			0.0			2.0			phong
-Half_Green			0.0			0.5			0.0			0.0			0.0			0.0			2.0			phong
-Half_Blue			0.0			0.0			0.5			0.0			0.0			0.0			2.0			phong
-
+Solid_Red			lambert		.color 		1.0			0.0			0.0
+Solid_Green			lambert		.color 		0.0			1.0			0.0
+Solid_Blue			lambert		.color 		0.0			0.0			1.0
+Solid_White			lambert		.color 		1.0			1.0			1.0
+Solid_Cyan			lambert		.color 		0.0			1.0			1.0
+Solid_Magenta		lambert		.color 		1.0			0.0			1.0
+Solid_Yellow		lambert		.color 		1.0			1.0			0.0
+Solid_Black			lambert		.color 		0.0			0.0			0.0
+Solid_Orange		lambert		.color 		1.0			0.5			0.0
+Solid_Pink			lambert		.color 		1.0			0.5			0.5
+Solid_Normal		lambert		.color 		0.5			0.5			1.0
+Solid_Purple		lambert		.color 		0.5			0.0			1.0
+Half_Red			lambert		.color 		0.5			0.0			0.0
+Half_Green			lambert		.color 		0.0			0.5			0.0
+Half_Blue			lambert		.color 		0.0			0.0			0.5
 
 
 //Material Presets
-//Material Name 	Color R 	Color G		Color B		Spec R 		Spec G 		Spec B		Cosine Pwr 	Material Type
 
-Asphalt				0.529411 	0.469838 	0.446366 	0.068375 	0.068375 	0.068375	5.350427	phong
-Brick				0.607843 	0.200000 	0.156862 	0.119661 	0.119661 	0.119661	2.000000	phong
-Concrete			0.607843 	0.564142 	0.512495 	0.230762 	0.230762 	0.230762	3.675213	phong
-Concrete_Rough		0.725490 	0.627022 	0.540561 	0.102571 	0.102571 	0.102571	2.000000	phong
-Carbon_Fibre		0.086274 	0.117647 	0.196078 	0.299137 	0.299137 	0.299137	2.837606	phong
-Charcoal			0.048442 	0.087633 	0.176470 	0.059830 	0.059830 	0.059830	2.000000	phong
-Earth				0.254901 	0.223529 	0.211764 	0.119661 	0.119661 	0.119661	2.000000	phong
-Eyeball				0.897428 	0.897428 	0.782040 	0.367528 	0.367528 	0.367528	65.65811	phong
-Fabric_Rough		0.509803 	0.439215 	0.505882 	0.222217 	0.222217 	0.222217	2.000000	phong
-Fabric_Soft			0.093428 	0.254901 	0.084967 	0.076920 	0.076920 	0.076920	2.000000	phong
-Fabric_Synthetic	0.199923 	0.509803 	0.212686 	0.239322 	0.239322 	0.239322	4.512820	phong
-FiberGlass			0.966001 	1.000000 	0.470588 	0.153841 	0.153841 	0.153841	2.000000	phong
-Glass				0.322952 	0.549019 	0.478687 	0.500000 	0.500000 	0.500000	26.29059	phong
-Grass				0.238773 	0.393163 	0.167696 	0.341878 	0.341878 	0.341878	11.21367	phong
-Gravel				0.314335 	0.417118 	0.607999 	0.153841 	0.153841 	0.153841	7.863247	phong
-Hair				0.431372 	0.306914 	0.236831 	0.501960 	0.501960 	0.309803	6.188034	phong
-Ice					0.427878 	0.525001 	0.589745 	0.500000 	0.500000 	0.500000	2.837606	phong
-Leather				0.137254 	0.113150 	0.099577 	0.444449 	0.444449 	0.444449	4.512820	phong
-Marble				0.046136 	0.196078 	0.046136 	0.649576 	0.649576 	0.649576	35.50427	phong
-Metal_Aluminum		0.408499 	0.453879 	0.470084 	0.940169 	0.940169 	0.940169	2.000000	phong
-Metal_Brass			0.705882 	0.611078 	0.179930 	1.000000 	0.949019 	0.466666	3.675213	phong
-Metal_Bronze		0.725490 	0.536794 	0.256055 	1.000000 	0.898187 	0.627450	3.675213	phong
-Metal_Chrome		0.188235 	0.188235 	0.188235 	1.000000 	1.000000 	1.000000	4.512820	phong
-Metal_Copper		0.470588 	0.233728 	0.193771 	1.000000 	0.808666 	0.666666	8.700854	phong
-Metal_Galvanized	0.392156 	0.392156 	0.470588 	0.282047 	0.282047 	0.282047	5.350427	phong
-Metal_Gold			1.000000 	0.805803 	0.121568 	1.000000 	0.705616 	0.000000	2.000000	phong
-Metal_Gun			0.062745 	0.062745 	0.062745 	0.376073 	0.376073 	0.376073	2.000000	phong
-Metal_Iron			0.380392 	0.360784 	0.341176 	0.803418 	0.803418 	0.803418	3.675213	phong
-Metal_Lead			0.159029 	0.205767 	0.247867 	0.162386 	0.162386 	0.162386	3.675213	phong
-Metal_Painted		1.000000 	0.598035 	0.000000 	0.307698 	0.307698 	0.307698	8.700854	phong
-Metal_Plate			0.500000 	0.500000 	0.500000 	0.461539 	0.461539 	0.461539	3.675213	phong
-Metal_Rusted		0.313725 	0.132982 	0.073817 	0.094010 	0.073746 	0.073746	2.000000	phong
-Metal_Steel			0.282352 	0.298039 	0.341176 	1.000000 	1.000000 	1.000000	8.700854	phong
-Mud					0.205127 	0.135957 	0.108705 	0.239322 	0.239322 	0.239322	7.025640	phong
-Paper				0.854703 	0.842206 	0.787655 	0.376073 	0.376073 	0.376073	2.000000	phong
-Plastic				0.000000 	0.227796 	1.000000 	0.500000 	0.500000 	0.500000	6.188034	phong
-Plastic_Glossy		0.764705 	0.288242 	0.209919 	0.811963 	0.811963 	0.811963	62.30769	phong
-Plastic_Rough		0.098280 	0.067281 	0.490196 	0.299137 	0.299137 	0.299137	2.000000	phong
-Porcelain			0.941176 	0.941176 	0.941176 	0.256412 	0.256412 	0.256412	51.41880	phong
-Rock				0.490196 	0.449834 	0.403690 	0.290592 	0.290592 	0.290592	7.025640	phong
-Rock_Rough			0.392156 	0.279421 	0.253748 	0.350423 	0.350423 	0.350423	3.675213	phong
-Rubber				0.125490 	0.125490 	0.125490 	0.188036 	0.188036 	0.188036	3.675213	phong
-Rubber_Dry			0.393163 	0.393163 	0.267673 	0.102571 	0.102571 	0.102571	2.000000	phong
-Skin				0.823529 	0.659900 	0.516724 	0.093385 	0.204821 	0.427344	2.000000	phong
-Skin_Rough			0.568627 	0.361390 	0.256439 	0.274357 	0.350423 	0.350423	3.675213	phong
-Snow				1.000000 	1.000000 	1.000000 	0.119661 	0.119661 	0.119661	2.000000	phong
-Soot				0.088649 	0.033633 	0.101000 	0.059830 	0.059830 	0.059830	2.000000	phong
-Terracotta			0.686274 	0.397295 	0.269127 	0.179491 	0.118898 	0.080765	2.000000	phong
-Void				0.000000 	0.000000 	0.000000 	0.000000 	0.000000 	0.000000	2.000000	phong
-Wood_Bark			0.264957 	0.175692 	0.140291 	0.176470 	0.156612 	0.148788	2.000000	phong
-Wood_Painted		0.640999 	0.226913 	0.343457 	0.145296 	0.145296 	0.145296	3.675213	phong
-Wood_Raw			0.764705 	0.664744 	0.464821 	0.444449 	0.386297 	0.270099	2.000000	phong
-Wood_Varnished		0.581200 	0.490806 	0.387502 	0.358968 	0.358968 	0.358968	33.82905	phong
+Asphalt				phong 		.color 		0.529411 	0.469838 	0.446366 	.specularColor 		0.068375 	0.068375 	0.068375	.cosinePower 		5.350427
+Brick				phong 		.color 		0.607843 	0.200000 	0.156862 	.specularColor 		0.119661 	0.119661 	0.119661	.cosinePower 		2.000000
+Concrete			phong 		.color 		0.607843 	0.564142 	0.512495 	.specularColor 		0.230762 	0.230762 	0.230762	.cosinePower 		3.675213
+Concrete_Rough		phong 		.color 		0.725490 	0.627022 	0.540561 	.specularColor 		0.102571 	0.102571 	0.102571	.cosinePower 		2.000000
+Carbon_Fiber		phong 		.color 		0.086274 	0.117647 	0.196078 	.specularColor 		0.299137 	0.299137 	0.299137	.cosinePower 		2.837606
+Charcoal			phong 		.color 		0.048442 	0.087633 	0.176470 	.specularColor 		0.059830 	0.059830 	0.059830	.cosinePower 		2.000000
+Earth				phong 		.color 		0.254901 	0.223529 	0.211764 	.specularColor 		0.119661 	0.119661 	0.119661	.cosinePower 		2.000000
+Eyeball				phong 		.color 		0.897428 	0.897428 	0.782040 	.specularColor 		0.367528 	0.367528 	0.367528	.cosinePower 		65.65811
+Fabric_Rough		phong 		.color 		0.509803 	0.439215 	0.505882 	.specularColor 		0.222217 	0.222217 	0.222217	.cosinePower 		2.000000
+Fabric_Soft			phong 		.color 		0.093428 	0.254901 	0.084967 	.specularColor 		0.076920 	0.076920 	0.076920	.cosinePower 		2.000000
+Fabric_Synthetic	phong 		.color 		0.199923 	0.509803 	0.212686 	.specularColor 		0.239322 	0.239322 	0.239322	.cosinePower 		4.512820
+FiberGlass			phong 		.color 		0.966001 	1.000000 	0.470588 	.specularColor 		0.153841 	0.153841 	0.153841	.cosinePower 		2.000000
+Glass				phong 		.color 		0.322952 	0.549019 	0.478687 	.specularColor 		0.500000 	0.500000 	0.500000	.cosinePower 		26.29059
+Grass				phong 		.color 		0.238773 	0.393163 	0.167696 	.specularColor 		0.341878 	0.341878 	0.341878	.cosinePower 		11.21367
+Gravel				phong 		.color 		0.314335 	0.417118 	0.607999 	.specularColor 		0.153841 	0.153841 	0.153841	.cosinePower 		7.863247
+Hair				phong 		.color 		0.431372 	0.306914 	0.236831 	.specularColor 		0.501960 	0.501960 	0.309803	.cosinePower 		6.188034
+Ice					phong 		.color 		0.427878 	0.525001 	0.589745 	.specularColor 		0.500000 	0.500000 	0.500000	.cosinePower 		2.837606
+Leather				phong 		.color 		0.137254 	0.113150 	0.099577 	.specularColor 		0.444449 	0.444449 	0.444449	.cosinePower 		4.512820
+Marble				phong 		.color 		0.046136 	0.196078 	0.046136 	.specularColor 		0.649576 	0.649576 	0.649576	.cosinePower 		35.50427
+Metal_Aluminum		phong 		.color 		0.408499 	0.453879 	0.470084 	.specularColor 		0.940169 	0.940169 	0.940169	.cosinePower 		2.000000
+Metal_Brass			phong 		.color 		0.705882 	0.611078 	0.179930 	.specularColor 		1.000000 	0.949019 	0.466666	.cosinePower 		3.675213
+Metal_Bronze		phong 		.color 		0.725490 	0.536794 	0.256055 	.specularColor 		1.000000 	0.898187 	0.627450	.cosinePower 		3.675213
+Metal_Chrome		phong 		.color 		0.188235 	0.188235 	0.188235 	.specularColor 		1.000000 	1.000000 	1.000000	.cosinePower 		4.512820
+Metal_Copper		phong 		.color 		0.470588 	0.233728 	0.193771 	.specularColor 		1.000000 	0.808666 	0.666666	.cosinePower 		8.700854
+Metal_Galvanized	phong 		.color 		0.392156 	0.392156 	0.470588 	.specularColor 		0.282047 	0.282047 	0.282047	.cosinePower 		5.350427
+Metal_Gold			phong 		.color 		1.000000 	0.805803 	0.121568 	.specularColor 		1.000000 	0.705616 	0.000000	.cosinePower 		2.000000
+Metal_Gun			phong 		.color 		0.062745 	0.062745 	0.062745 	.specularColor 		0.376073 	0.376073 	0.376073	.cosinePower 		2.000000
+Metal_Iron			phong 		.color 		0.380392 	0.360784 	0.341176 	.specularColor 		0.803418 	0.803418 	0.803418	.cosinePower 		3.675213
+Metal_Lead			phong 		.color 		0.159029 	0.205767 	0.247867 	.specularColor 		0.162386 	0.162386 	0.162386	.cosinePower 		3.675213
+Metal_Painted		phong 		.color 		1.000000 	0.598035 	0.000000 	.specularColor 		0.307698 	0.307698 	0.307698	.cosinePower 		8.700854
+Metal_Plate			phong 		.color 		0.500000 	0.500000 	0.500000 	.specularColor 		0.461539 	0.461539 	0.461539	.cosinePower 		3.675213
+Metal_Rusted		phong 		.color 		0.313725 	0.132982 	0.073817 	.specularColor 		0.094010 	0.073746 	0.073746	.cosinePower 		2.000000
+Metal_Steel			phong 		.color 		0.282352 	0.298039 	0.341176 	.specularColor 		1.000000 	1.000000 	1.000000	.cosinePower 		8.700854
+Mud					phong 		.color 		0.205127 	0.135957 	0.108705 	.specularColor 		0.239322 	0.239322 	0.239322	.cosinePower 		7.025640
+Paper				phong 		.color 		0.854703 	0.842206 	0.787655 	.specularColor 		0.376073 	0.376073 	0.376073	.cosinePower 		2.000000
+Plastic				phong 		.color 		0.000000 	0.227796 	1.000000 	.specularColor 		0.500000 	0.500000 	0.500000	.cosinePower 		6.188034
+Plastic_Glossy		phong 		.color 		0.764705 	0.288242 	0.209919 	.specularColor 		0.811963 	0.811963 	0.811963	.cosinePower 		62.30769
+Plastic_Rough		phong 		.color 		0.098280 	0.067281 	0.490196 	.specularColor 		0.299137 	0.299137 	0.299137	.cosinePower 		2.000000
+Porcelain			phong 		.color 		0.941176 	0.941176 	0.941176 	.specularColor 		0.256412 	0.256412 	0.256412	.cosinePower 		51.41880
+Rock				phong 		.color 		0.490196 	0.449834 	0.403690 	.specularColor 		0.290592 	0.290592 	0.290592	.cosinePower 		7.025640
+Rock_Rough			phong 		.color 		0.392156 	0.279421 	0.253748 	.specularColor 		0.350423 	0.350423 	0.350423	.cosinePower 		3.675213
+Rubber				phong 		.color 		0.125490 	0.125490 	0.125490 	.specularColor 		0.188036 	0.188036 	0.188036	.cosinePower 		3.675213
+Rubber_Dry			phong 		.color 		0.393163 	0.393163 	0.267673 	.specularColor 		0.102571 	0.102571 	0.102571	.cosinePower 		2.000000
+Skin				phong 		.color 		0.823529 	0.659900 	0.516724 	.specularColor 		0.093385 	0.204821 	0.427344	.cosinePower 		2.000000
+Skin_Rough			phong 		.color 		0.568627 	0.361390 	0.256439 	.specularColor 		0.274357 	0.350423 	0.350423	.cosinePower 		3.675213
+Snow				phong 		.color 		1.000000 	1.000000 	1.000000 	.specularColor 		0.119661 	0.119661 	0.119661	.cosinePower 		2.000000
+Soot				phong 		.color 		0.088649 	0.033633 	0.101000 	.specularColor 		0.059830 	0.059830 	0.059830	.cosinePower 		2.000000
+Terracotta			phong 		.color 		0.686274 	0.397295 	0.269127 	.specularColor 		0.179491 	0.118898 	0.080765	.cosinePower 		2.000000
+Void				phong 		.color 		0.000000 	0.000000 	0.000000 	.specularColor 		0.000000 	0.000000 	0.000000	.cosinePower 		2.000000
+Wood_Bark			phong 		.color 		0.264957 	0.175692 	0.140291 	.specularColor 		0.176470 	0.156612 	0.148788	.cosinePower 		2.000000
+Wood_Painted		phong 		.color 		0.640999 	0.226913 	0.343457 	.specularColor 		0.145296 	0.145296 	0.145296	.cosinePower 		3.675213
+Wood_Raw			phong 		.color 		0.764705 	0.664744 	0.464821 	.specularColor 		0.444449 	0.386297 	0.270099	.cosinePower 		2.000000
+Wood_Varnished		phong 		.color 		0.581200 	0.490806 	0.387502 	.specularColor 		0.358968 	0.358968 	0.358968	.cosinePower 		33.82905
