@@ -20,7 +20,8 @@ if ( $mm_scriptJob == 0 ) {
 	$mm_scriptJob = `scriptJob -e "NewSceneOpened" "mm_build_tab_main();" -protected`;
 	$mm_scriptJob = `scriptJob -e "PostSceneRead" "mm_updateMaterialManager();" -protected`;
 	$mm_scriptJob = `scriptJob -e "Undo" "mm_updateMaterialManager();" -protected`;
-	$mm_scriptJob = `scriptJob -e "SelectionChanged" "eval(\"mm_updateFrameLayout(1)\"); evalDeferred(\"mm_updateIndicators()\");" -protected`;
+	// $mm_scriptJob = `scriptJob -e "SelectionChanged" "eval(\"mm_updateFrameLayout(1)\"); evalDeferred(\"mm_updateIndicators()\");" -protected`;
+	$mm_scriptJob = `scriptJob -e "SelectionChanged" "evalDeferred(\"mm_updateIndicators()\");" -protected`;
 
 	source AEfileTemplate.mel;
 	source AEmeshTemplate.mel;
@@ -36,6 +37,7 @@ global proc materialManager() {
 	global string $mm_window = "materialManagerWindow";
 	global int $mm_dk_side;
 	global int $mm_bs_wind;
+	global int $mm_cb_bann;
 	// global int $mm_cb_suspend;
 	string $title = ( "Material Manager v" + $mm_Version );
 
@@ -63,13 +65,15 @@ global proc materialManager() {
 			mm_build_tab_baker();
 		}
 
+	int $searchTop = 50;
+	if ( ! $mm_cb_bann ) { $searchTop = 0; }
 
 	formLayout -edit
 		-attachForm 	mm_form_banner 	"right" 	0
 		-attachForm 	mm_form_banner 	"left" 		0
 		-attachForm 	mm_form_search 	"right" 	0
 		-attachForm 	mm_form_search 	"left" 		0
-		-attachForm 	mm_form_search 	"top"	 	50
+		-attachForm 	mm_form_search 	"top"	 	$searchTop
 	mm_form_window;
 
 
@@ -651,6 +655,9 @@ global proc mm_build_tabContainer() {
 		-cc ( "mm_updateIndicators()" )
 		$tabs;
 
+	// $bgc = mm_getUIColor("grey");
+	// evalDeferred("formLayout -edit -attachForm mm_cb_reportChildren \"top\" " + $childrenTop + " -attachForm mm_cb_reportChildren \"right\" 10");
+
 	// string $lbl;
 	// if ( $mm_cb_suspend ) { $bgc = { 1.0, 0.5, 0.0 }; $lbl = "||"; }
 	// else { $bgc = { .115, .357, .5 }; }
@@ -688,7 +695,23 @@ global proc mm_build_tabContainer() {
 		formLayout -h 36 -p mm_form_main mm_form_materialControl;
 		formLayout -h 84 -p mm_form_main mm_form_channelControl;
 
+	global int $mm_cb_children;
+	checkBox -l "Report Children" 
+		-onc "global int $mm_cb_children; $mm_cb_children = 1;"
+		-ofc "global int $mm_cb_children; $mm_cb_children = 0;"
+		-cc "mm_updateIndicators();" 
+		-v $mm_cb_children 
+		-p mm_form_main mm_cb_reportChildren;
+	int $childrenBot = 122;
+	if ( ! $mm_cb_bann ) { $childrenTop = 73; }
+
+
 	formLayout -edit 
+		-attachForm 	mm_cb_reportChildren	"bottom"	$childrenBot
+		-attachForm 	mm_cb_reportChildren	"left"		120
+		// -attachForm 	mm_txt_Childrenspacer	"top"		$childrenTop
+		// -attachControl 	mm_txt_Childrenspacer	"left"		-80				$tabs
+
 		-attachForm 	mm_scroll_main 			"top" 		0
 		-attachForm 	mm_scroll_main 			"left" 		0
 		-attachForm 	mm_scroll_main 			"right"		0
@@ -2850,6 +2873,7 @@ global proc float[] mm_getUIColor(string $type) {
 	else if ( $type == "near black" ) { return { .1, .1, .1 }; }
 	else if ( $type == "orange" ) { return { 1.0, 0.5, 0.0 }; }
 	else if ( $type == "yellow" ) { return { .8, .8, .5}; }
+	else if ( $type == "grey" || $type == "gray" ) { return { .5, .5, .5}; }
 	else { 
 		return { ((float)$type), ((float)$type), ((float)$type) };
 	}
@@ -2976,50 +3000,49 @@ global proc string[] mm_getFilteredMaterials(string $list[]) {
 global proc string[] mm_getAssignedMaterials() {
 	global int $mm_cb_cind;
 	string $sel[] = `ls -l -sl`;
-	string $original[] = $sel;
 	string $assignedMats[];
+	int $reportChildren = `checkBox -q -v mm_cb_reportChildren`;
 
-	if ( ! $mm_cb_cind ) {
-		string $models[] = mm_filterModels($sel);
-		string $components[] = stringArrayRemove($models, $sel);
-		if ( $components[0] != "" ) { $sel = `listRelatives -f -ap -ni`; }
-	}
-
-	string $allSets[];
-	//catch any strangeness where a queried surface doesn't exist
-	$sel = mm_cleanStringArray($sel);
-	if ( mm_isMaterial($sel[0]) ) {
-		//This checks to see if more than one material is selected
-		int $selectionIsAllMaterials = 1;
-		for ( $item in $sel ) {
-			if ( ! mm_isMaterial($item) ) { $selectionIsAllMaterials = 0; break; }
+	string $set[];
+	for ( $obj in $sel ) {
+		if ( mm_isComponent($obj) ) {
+			// components
+			if ( ! $mm_cb_cind ) {
+				// per-component indication off
+				string $shapes[] = `listRelatives -p -type "shape" $obj`;
+				$set = stringArrayCatenate( $set, `listSets -type 1 -ets -o $shapes[0]` );
+			}
+			else {
+				// per-component indication on
+				$set = stringArrayCatenate( $set, `listSets -type 1 -ets -o $obj` );
+			}
 		}
-
-		if ( $selectionIsAllMaterials ) { $assignedMats = $sel; }
-		else { $assignedMats[0] = $sel[0]; }
-	}
-	else {
-		string $rel[] = `listRelatives -f $sel`;
-		string $shapes[] = `ls -type "shape" $rel`;
-		$sel = stringArrayCatenate($sel, $rel);
-		$sel = stringArrayRemove($shapes, $sel);
-		$sel = `ls -l $sel`;
-
-		for ( $item in $sel ) {
-			$allSets = stringArrayCatenate($allSets, `listSets -type 1 -ets -o $item`);
+		else if ( mm_isMaterial($obj) ) {
+			// materials
+			$assignedMats[`size $assignedMats`] = $obj;
 		}
-		$allSets = stringArrayRemoveDuplicates($allSets);
-
-		for ( $item in $allSets ) {
-			if ( `objExists ($item + ".surfaceShader")` ) {
-				string $ss[] = `listConnections ($item + ".surfaceShader")`;
-				$assignedMats[`size $assignedMats`] = $ss[0];
+		else {
+			// objects
+			if ( $reportChildren ) {
+				// reporting children on
+				string $shapes[] = `listRelatives -type "shape" -ad $obj`;
+				$set = stringArrayCatenate( $set, `listConnections -type "shadingEngine" $shapes` );
+			}
+			else {
+				// reporting children off
+				$set = stringArrayCatenate( $set, `listSets -type 1 -ets -o $obj` );
 			}
 		}
 	}
 
+	$set = stringArrayRemoveDuplicates($set);
+
+	for ( $sg in $set ) {
+		$assignedMats = stringArrayCatenate( $assignedMats, `listConnections ( $sg + ".surfaceShader" )` );
+	}
+
 	$assignedMats = stringArrayRemoveDuplicates($assignedMats);
-	return $assignedMats;
+	return $assignedMats;	
 }
 
 
@@ -3191,7 +3214,7 @@ global proc mm_getConfigData() {
 		string $c02 = "global int $mm_cb_snap = 1; ";
 		string $c03 = "global int $mm_cb_spre = 1; ";
 		// string $c04 = "global int $mm_cb_suspend = 0; ";
-		string $c04 = "";
+		string $c04 = "global int $mm_cb_children = 0";
 		string $c05 = "global int $mm_cb_bann = 1; ";
 		string $c06 = "global int $mm_cb_part = 0; ";
 		string $c07 = "global int $mm_cb_attr = 1; ";
@@ -3619,7 +3642,8 @@ global proc mm_checkForMultipleMaterials(string $mode, string $mats[], string $c
 		mm_form_mats;
 
 		text -l ("Choose which material to " + $mode + " files:") txt_multiMaterials;
-		iconTextButton -style "textOnly" -w ($mm_bs_wind / 3) -l "Cancel" -bgc $bgc[0] $bgc[1] $bgc[2] -c "mm_updateIndicators(); mm_updateFrameLayout(0);" btn_cancel_multiMaterials;
+		// iconTextButton -style "textOnly" -w ($mm_bs_wind / 3) -l "Cancel" -bgc $bgc[0] $bgc[1] $bgc[2] -c "mm_updateIndicators(); mm_updateFrameLayout(0);" btn_cancel_multiMaterials;
+		iconTextButton -style "textOnly" -w ($mm_bs_wind / 3) -l "Cancel" -bgc $bgc[0] $bgc[1] $bgc[2] -c "mm_updateIndicators();" btn_cancel_multiMaterials;
 
 		for ( $mat in $mats ) {
 			string $cmd = ( "select " + $mat + "; mm_" + $mode + "Channel(\"" + $channel + "\");" );
@@ -3672,7 +3696,7 @@ global proc string mm_getHandedness() {
 	string $modelShapes[] = `listRelatives -s -ni -c`;
 	string $allShapes[] = $compShapes;
 	$allShapes = stringArrayCatenate($modelShapes, $allShapes);
-
+// error $allShapes;
 	string $handedness[];
 	for ( $item in $allShapes ) {
 		string $longName[] = `ls -l $item`;
@@ -3810,7 +3834,7 @@ global proc mm_changeDocking(int $state) {
 	evalDeferred("materialManager;");
 }
 
-
+/*
 global proc mm_updateFrameLayout(int $checkLargeSel) {
 	global string $mm_window;
 	// global int $mm_cb_suspend;
@@ -3829,141 +3853,104 @@ global proc mm_updateFrameLayout(int $checkLargeSel) {
 	// else { frameLayout -e -l "     Material List" -bgc $bgc[0] $bgc[1] $bgc[2] mm_tab_main; }
 	// button -e -vis 1 mm_btn_suspend;
 }
-
+*/
 
 global proc mm_updateIndicators() {
 	global string $mm_window;
-	if ( ! `window -ex $mm_window` ) { return; }
-	if ( mm_getCurrentTab() != 1 ) { return; }
 	global string $mm_lastNameplates[];
 	global string $mm_markers[];
-	global int $mm_cb_sass;
-	// global int $mm_cb_suspend;
 	global string $mm_assigned[];
 	global string $mm_i_assign;
 	global string $mm_i_texture;
 	global string $mm_materialButtonNames[];
-	string $lambert1 = mm_getStartingSG();
+	global int $mm_cb_sass;
+	string $mats[] = mm_getFilteredMaterials( mm_getAllMaterials() );
 	float $bgc[];
 
-	// update handedness icon
-	// mm_updateHandedness();
+	//////
+	////// checks that require no action, or for UI to rebuild
+	//////
 
-	// suspended
-	// if ( $mm_cb_suspend ) { return; }
+	// window doesn't exist
+	if ( ! `window -ex $mm_window` ) { return; }
 
-	// always update if sort assigned is on (do this in mm_build_tab_main perhaps?)
+	// not on tab 1
+	if ( mm_getCurrentTab() != 1 ) { return; }
+
+	// sort assigned first is on
 	if ( $mm_cb_sass ) { mm_build_tab_main(); return; }
 
-	// get various material lists
-	$mm_assigned = mm_getAssignedMaterials();
-	string $mats[] = mm_getFilteredMaterials( mm_getAllMaterials() );
-	string $marked[] = mm_getMarkedMaterials();
-
-	//Update On Selection counter text
-	int $numAssigned = `size $mm_assigned`;
-	text -e -l $numAssigned txt_main_assignNum;
-
-	// if the number of materiald and button names don't match
+	// number of materials and button names don't match
 	if ( `size $mats` != `size $mm_materialButtonNames` ) { mm_build_tab_main(); return; }
 
-
-	// Update if the number of most recent nameplates doesnt match the number of currently assigned materials
-	if ( `size $mm_assigned` != `size $mm_lastNameplates` ) { 
-		string $newNameplateList[];
-		for ( $item in $mm_lastNameplates ) {
-			if ( ! stringArrayContains($item, $mm_assigned) ) {
-				$bgc = mm_getUIColor("dark gray");
-				iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ( "btn_" + $item );
-				// stringArrayRemove( { $item }, $mm_lastNameplates);
-			}
-			// else {
-			// 	$bgc = mm_getUIColor("blue");
-			// 	iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ( "btn_" + $item );
-			// 	// $newNameplateList[`size $newNameplateList`] = ( $item );
-			// }
-		}
-		// catch for initializing MM5 without a selection (common)
-		// if ( `size $mm_lastNameplates` == 0 ) {
-			$bgc = mm_getUIColor("blue");
-			for ( $item in $mm_assigned ) {
-				//the objExists check is to ignore buttons which _should_ exist but the button isn't drawn due to the list being filtered.
-				//we can afford to have this check here because the assigned material list is usually very small.
-				//this overall is faster than filtering the assigned material list to match the filtered scene material list.
-				// if ( `objExists ( "btn_" + $item)` ) {
-					iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ( "btn_" + $item );
-					$mm_lastNameplates[`size $mm_lastNameplates`] = ( $item );
-				// }
-			}
-		// }
-	return;
-	}
-
-	//Update whole list if a material's button doesn't exist
+	// one or more material buttons don't exist
 	string $allITBs[] = `lsUI -type "iconTextButton"`;
 	int $allCount = `size $allITBs`;
 	int $btnCount = `size $mm_materialButtonNames`;
-
 	$allITBs = stringArrayRemove($mm_materialButtonNames, $allITBs);
-	int $difference = `size $allITBs`;
-
-	if ( $allCount - $btnCount != $difference ) {
-		mm_build_tab_main();
-		return;
-	}
-
-	// check for a mismatch in material count vs nameplates.  any mismatch needs to redraw the Material List
-	// otherwise, just update nameplate color
-	int $totalMats = size( mm_getAllMaterials() );
-	int $allListed = size( `formLayout -q -ca mm_form_mats` ) / 3;
-	int $filterAmount = size( $mats );
-	if ( $totalMats != $allListed || $totalMats != $filterAmount ) { mm_build_tab_main(); return; }
+	if ( $allCount - $btnCount != `size $allITBs` ) { mm_build_tab_main(); return; }
 
 
-	// reset color to default
-	string $img;
-	$bgc = mm_getUIColor("dark gray");
+	//////
+	////// UI updates to everything except the Material List
+	//////
 
-	/*
-	for ( $mat in $mats ) {
-		iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ( "btn_" + $mat );
-	}
-	*/
-	for ( $btn in $mm_lastNameplates ) {
-		iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ( "btn_" + $btn );
-	}
+	// update On Selection counter text
+	$mm_assigned = mm_getAssignedMaterials();
+	int $numAssigned = `size $mm_assigned`;
+	text -e -l $numAssigned txt_main_assignNum;
 
-	// update for assigned materials
-	for ( $mat in $mm_assigned ) {
-		$bgc = mm_getUIColor("blue");
-		iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ( "btn_" + $mat );
-		string $channel = mm_getValidChannelName($mat, "color");
-		if ( mm_isChannelEmpty( $mat + $channel ) ) { 
-			$bgc = mm_getMaterialColor($mat);
-			$img = $mm_i_assign;
-		}
-		else {
-			$bgc = mm_getUIColor("dark gray");
-			$img = $mm_i_texture;
-		}
-		iconTextButton -e -i $img -bgc $bgc[0] $bgc[1] $bgc[2] ( "ass_" + $mat );
-	}
-
-	// logic for enabling material control buttons for lambert1
+	// enabling or disabling material control buttons for lambert1
+	string $lambert1 = mm_getStartingSG();
+	string $marked[] = mm_getMarkedMaterials();
 	int $numMarked = `size $marked`;
 	int $numMarkers = `size $mm_markers`;
 	int $state;
-
 	if ( $numAssigned > 1 ) { $state = 1; }
 	else if ( $numMarkers > 1 ) { $state = 1; }
 	else if ( $numMarked > 1 ) { $state = 1; }
 	else if ( $mm_assigned[0] != $lambert1 ) { $state = 1; }
-
 	iconTextButton -e -en $state mDelete;
 	iconTextButton -e -en $state mRename;
 
+	// set logic to enable or disable Rename/Delete material control for lambert1
+	string $assigned[] = $mm_assigned;
+	if ( `size $assigned` == 1 && $assigned[0] == $lambert1 && `size $marked` <= 1 && $marked[0] == $lambert1 ) { $enabled = 0; }
+	if ( $assigned[0] == "" && `size $mm_markers` == 1 && $mm_markers[0] == $lambert1 ) { $enabled = 0; }
 
-	// check to see if channel is empty to determine which icon to use
+	// checker preset swatches
+	string $checkers[] = { "M_Checker", "Checker", "M_Checker_Good", "Checker_Good", "M_Checker_Bad", "Checker_Bad" };
+	string $img = "MaterialManager/swatch_checker.png";
+	$bgc = mm_getUIColor("dark gray");
+	for ( $mat in $checkers ) {
+		if ( `objExists $mat` && mm_isMaterial($mat) ) {
+			if ( mm_has($mat, "Good") ) { $img = "MaterialManager/swatch_checker_green.png"; }
+			if ( mm_has($mat, "Bad") ) { $img = "MaterialManager/swatch_checker_red.png"; }
+			iconTextButton -e -i $img -bgc $bgc[0] $bgc[1] $bgc[2] ( "ass_" + $mat );
+		}
+	}
+
+
+	//////
+	//////  Material List Update
+	//////
+
+	// set all old nameplates to unassigned
+	for ( $last in $mm_lastNameplates ) {
+		$bgc = mm_getUIColor("dark gray");
+		string $btn = ( "btn_" + $last );
+		if ( `iconTextButton -q -ex $btn` ) {
+			iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] $btn;
+		}
+	}
+	
+	// update assigned nameplates
+	$bgc = mm_getUIColor("blue");
+	for ( $mat in $mm_assigned ) {
+		iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ( "btn_" + $mat );
+	}
+
+	// update Assign icon
 	for ( $mat in $mm_assigned ) {
 		if ( mm_isChannelEmpty( ( $mat + mm_getValidChannelName($mat, "color") ) ) ) { 
 			$img = $mm_i_assign; 
@@ -3973,42 +3960,36 @@ global proc mm_updateIndicators() {
 			$img = $mm_i_texture; 
 			$bgc = mm_getUIColor("dark gray");
 		}
-
 		iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ("ass_" + $mat);
 	}
 
-	// for each checker material:
-	string $checkers[] = { "M_Checker", "Checker", "M_Checker_Good", "Checker_Good", "M_Checker_Bad", "Checker_Bad" };
-	$img = "MaterialManager/swatch_checker.png";
-	$bgc = mm_getUIColor("dark gray");
-
-	for ( $mat in $checkers ) {
-		if ( `objExists $mat` && mm_isMaterial($mat) ) {
-			if ( mm_has($mat, "Good") ) { $img = "MaterialManager/swatch_checker_green.png"; }
-			if ( mm_has($mat, "Bad") ) { $img = "MaterialManager/swatch_checker_red.png"; }
-
-			iconTextButton -e -i $img -bgc $bgc[0] $bgc[1] $bgc[2] ( "ass_" + $mat );
-		}
+	// update channel indicators
+	for ( $mat in $mm_assigned ) {
+		mm_updateChannelIndicators($mat);
 	}
 
-	//If material list is suspended, skip everything except updating the frameLayout
-	int $enabled = 1;
+	$mm_lastNameplates = $mm_assigned;
 
 
-	//Enable or Disable rename/delete material control
-	if ( $mm_assigned[0] == $lambert1 && `size $mm_assigned` == 1 ) { $enabled = 0; }
-	iconTextButton -e -en $enabled mDelete;
-	iconTextButton -e -en $enabled mRename;	
+	// Nameplate Color
+	//// all previous nameplates are inactive
+	//// all assigned mats are active
+	// Swatch Color / Image
 
-	$bgc = mm_getUIColor("near black");
-	// frameLayout -e -l "     Material List" -bgc $bgc[0] $bgc[1] $bgc[2] mm_tab_main;
 
-	//Otherwise just change existing nameplate indicator and assign button colors
-	string $assigned[] = $mm_assigned;
 
-	//Set logic for Enable or Disable rename/delete material control for lambert1
-	if ( `size $assigned` == 1 && $assigned[0] == $lambert1 && `size $marked` <= 1 && $marked[0] == $lambert1 ) { $enabled = 0; }
-	if ( $assigned[0] == "" && `size $mm_markers` == 1 && $mm_markers[0] == $lambert1 ) { $enabled = 0; }
+
+
+	/*
+	for ( $mat in $mats ) {
+		iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ( "btn_" + $mat );
+	}
+	*/
+
+/*	
+	for ( $btn in $mm_lastNameplates ) {
+		iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ( "btn_" + $btn );
+	}
 
 
 	// update assign button swatches
@@ -4019,16 +4000,7 @@ global proc mm_updateIndicators() {
 			iconTextButton -e -i $mm_i_assign -bgc $bgc[0] $bgc[1] $bgc[2] -c ("mm_assignMaterial(\"" + $mat + "\");") ( "ass_" + $mat );
 		}
 		else {
-			// special image for the custom checker pattern
-			if ( $mat == "M_Checker" || $mat == "Checker" || mm_has($mat, "Checker_Good") || mm_has($mat, "Checker_Bad") ) {
-				string $img = "MaterialManager/swatch_checker.png";
-				if ( mm_has($mat, "Checker_Good") ) { $img = "MaterialManager/swatch_checker_green.png"; }
-				else if ( mm_has($mat, "Checker_Bad") ) { $img = "MaterialManager/swatch_checker_red.png"; }
-				iconTextButton -e -i $img -bgc .2 .2 .2 -c ("mm_assignMaterial(\"" + $mat + "\");") ( "ass_" + $mat );
-			}
-			else {
-				iconTextButton -e -i $mm_i_texture -bgc .2 .2 .2 -c ("mm_assignMaterial(\"" + $mat + "\");") ( "ass_" + $mat );	
-			}
+			iconTextButton -e -i $mm_i_texture -bgc .2 .2 .2 -c ("mm_assignMaterial(\"" + $mat + "\");") ( "ass_" + $mat );	
 		}
 
 		if ( stringArrayContains($mat, $assigned) ) { 
@@ -4040,11 +4012,9 @@ global proc mm_updateIndicators() {
 			iconTextButton -e -bgc $bgc[0] $bgc[1] $bgc[2] ( "btn_" + $mat ); 
 		}
 	}
+*/
 
-	$mm_lastNameplates = $mm_assigned;
-	for ( $mat in $mm_assigned ) {
-		mm_updateChannelIndicators($mat);
-	}
+
 }
 
 
@@ -4206,18 +4176,22 @@ global proc mm_updateBanner() {
 		formLayout -e -vis 0 mm_form_banner;
 
 		formLayout -edit 
-			-attachForm 	mm_form_search	 	"top" 	0
- 			-attachForm 	mm_tabs 			"top" 	50
-			// -attachForm 	mm_btn_suspend 		"top"	74
+			// -attachForm 	mm_cb_reportChildren	"top"	73
+
+			-attachForm 	mm_form_search	 		"top" 	0
+ 			-attachForm 	mm_tabs 				"top" 	50
+			// -attachForm 	mm_btn_suspend 			"top"	74
 		mm_form_window;
 	}
 	else {
 		formLayout -e -vis 1 mm_form_banner;
 
 		formLayout -edit 
-			-attachForm 	mm_form_search 		"top" 	50
-			-attachForm 	mm_tabs 			"top" 	100
-			// -attachForm 	mm_btn_suspend 		"top"	124
+			// -attachForm 	mm_cb_reportChildren	"top"	122
+
+			-attachForm 	mm_form_search 			"top" 	50
+			-attachForm 	mm_tabs 				"top" 	100
+			// -attachForm 	mm_btn_suspend 			"top"	124
 		mm_form_window;
 
 	}
@@ -5150,8 +5124,9 @@ global proc mm_clearInfo() {
 	frameLayout -e -l "     Materials Loaded in Scene" -bgc $bgc[0] $bgc[1] $bgc[2] mm_tab_main;
 	// button -e -vis 1 mm_btn_suspend; 
 	setFocus materialManagerWindow;
-	evalDeferred("mm_updateFrameLayout(1);");
-	evalDeferred("mm_updateIndicators(); mm_updateFrameLayout(0);");
+	// evalDeferred("mm_updateFrameLayout(1);");
+	// evalDeferred("mm_updateIndicators(); mm_updateFrameLayout(0);");
+	evalDeferred("mm_updateIndicators();");
 }
 
 
@@ -5384,6 +5359,6 @@ global proc mm_bindHotkey() {
 	eval $hotkeyCmd;
 	evalDeferred("SavePreferences;");
 	
-	mm_updateFrameLayout(0);
+	// mm_updateFrameLayout(0);
 	mm_build_tab_main();
 }
