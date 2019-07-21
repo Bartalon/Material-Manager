@@ -26,7 +26,7 @@ ID:mm_rb_crono
 VALUE:0
 ID:mm_cb_sass
 
-
+//  (DEPRECATED - NO LONGER USED)
 //  Snap the Material List scroll bar to the top when selecting a single material using the name plates in the Material List.
 //  Menu Location:  Sorting > Sort Assigned: Snap to top with one material
 //  	0  -  Scroll bar will stay where it is until moved by the user
@@ -199,13 +199,6 @@ VALUE:_N
 ID:mm_load_normal
 
 
-//  This suffix will be used when searching for the SPECULAR COLOR channel inside the designated folder
-//  when using the Load Files from Folder tool.  The default suffix is _S
-//
-VALUE:_S
-ID:mm_load_specular
-
-
 //  This suffix will be used when searching for the METALLIC channel inside the designated folder
 //  when using the Load Files from Folder tool.  The default suffix is _M
 //
@@ -232,3 +225,18 @@ ID:mm_load_emissive
 //
 VALUE:_O
 ID:mm_load_opacity
+
+
+//  This suffix will be used when searching for the SPECULAR COLOR channel inside the designated folder
+//  when using the Load Files from Folder tool.  The default suffix is _S
+//
+VALUE:_S
+ID:mm_load_specular
+
+
+//  This suffix will be used when searching for the SPECULAR COLOR channel inside the designated folder
+//  when using the Load Files from Folder tool.  The default suffix is _S
+//
+VALUE:_AO
+ID:mm_load_occlusion
+
