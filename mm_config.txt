@@ -26,7 +26,7 @@ ID:mm_rb_crono
 VALUE:0
 ID:mm_cb_sass
 
-
+//  (DEPRECATED - NO LONGER USED)
 //  Snap the Material List scroll bar to the top when selecting a single material using the name plates in the Material List.
 //  Menu Location:  Sorting > Sort Assigned: Snap to top with one material
 //  	0  -  Scroll bar will stay where it is until moved by the user
@@ -43,12 +43,12 @@ VALUE:1
 ID:mm_cb_spre
 
 
-//  When initializing MM5 for the first time, the Material List will want to check the scene
-//  Menu Location:  Sorting > Suspend Material List Updating
-//  	0  -  Non suspended (default)
-//  	1  -  Suspend Material List updating
+//  When initializing MM5 for the first time, the Material List will 
+//  Option Location:  Bottom of Material List section of Current Scene tab.
+//  	0  -  Do not include children when determining assigned materials (default)
+//  	1  -  Report assigned materials on child objects
 VALUE:0
-ID:mm_cb_suspend
+ID:mm_cb_children
 
 
 //  Display the banner area (Material Manager 5 graphic and Import/Export buttons)
@@ -199,13 +199,6 @@ VALUE:_N
 ID:mm_load_normal
 
 
-//  This suffix will be used when searching for the SPECULAR COLOR channel inside the designated folder
-//  when using the Load Files from Folder tool.  The default suffix is _S
-//
-VALUE:_S
-ID:mm_load_specular
-
-
 //  This suffix will be used when searching for the METALLIC channel inside the designated folder
 //  when using the Load Files from Folder tool.  The default suffix is _M
 //
@@ -232,3 +225,18 @@ ID:mm_load_emissive
 //
 VALUE:_O
 ID:mm_load_opacity
+
+
+//  This suffix will be used when searching for the SPECULAR COLOR channel inside the designated folder
+//  when using the Load Files from Folder tool.  The default suffix is _S
+//
+VALUE:_S
+ID:mm_load_specular
+
+
+//  This suffix will be used when searching for the SPECULAR COLOR channel inside the designated folder
+//  when using the Load Files from Folder tool.  The default suffix is _S
+//
+VALUE:_AO
+ID:mm_load_occlusion
+
