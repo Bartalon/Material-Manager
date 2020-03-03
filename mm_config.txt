@@ -19,12 +19,21 @@ VALUE:0
 ID:mm_rb_crono
 
 
+//  Materials assigned to your selection will be the only things that appear in the Material List
+//  Menu Location:  Sorting > Material List Only Shows Assigned
+//  	0  -  Do not limit Material List to only what is assigned to the selection
+//  	1  -  Limit Material List to only what is assigned to the selection
+VALUE:0
+ID:mm_cb_oass
+
+
 //  Materials assigned to your selection will always appear at the top of the list in the Current Scene tab.
 //  Menu Location:  Sorting > Sort Assigned Materials First
 //  	0  -  Do not sort at the top (default)
 //  	1  -  Sort assigned materials at the top
 VALUE:0
 ID:mm_cb_sass
+
 
 //  (DEPRECATED - NO LONGER USED)
 //  Snap the Material List scroll bar to the top when selecting a single material using the name plates in the Material List.

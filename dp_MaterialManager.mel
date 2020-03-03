@@ -1,5 +1,5 @@
-global string $mm_Version = "5.2.0";
-global string $mm_Release = "21 July 2019";
+global string $mm_Version = "5.3.0 BETA";
+global string $mm_Release = "NOT FINAL March 2020";
 global int $mm_scriptJob;
 
 if ( $mm_scriptJob == 0 ) {
@@ -110,6 +110,7 @@ global proc mm_build_menuItems() {
 	global string $mm_window;
 	//checkbox states
 	global int $mm_rb_crono;
+	global int $mm_cb_oass;
 	global int $mm_cb_sass;
 	global int $mm_cb_snap;
 	global int $mm_cb_spre;
@@ -125,6 +126,7 @@ global proc mm_build_menuItems() {
 	//menu items that are checkboxes or radio buttons
 	string $mm_s_chrono = "menuSortChrono";
 	string $mm_s_alpha = "menuSortAlpha";
+	string $mm_s_oass = "menuSortOnlyAssigned";
 	string $mm_s_sass = "menuSortAssigned";
 	string $mm_s_snap = "menuSortScrollToTop";
 	string $mm_s_spre = "menuSortPresets";
@@ -193,8 +195,9 @@ global proc mm_build_menuItems() {
 	"",		"", 				"Refresh Material List",						"",						"mm_build_tab_main();",
 	"", 	"",					"divider",										"",						"",
 	"R", 	$mm_rb_crono,		"Sort Materials Chronologically",				$mm_s_chrono,			"mm_updateCB(); mm_build_tab_main()",	
-	"R", 	(1-$mm_rb_crono),	"Sort Materials Alphabetically",				$mm_s_alpha,			"mm_updateCB(); mm_build_tab_main()",	
+	"R", 	(1-$mm_rb_crono),	"Sort Materials Alphabetically",				$mm_s_alpha,			"mm_updateCB(); mm_build_tab_main()",
 	"", 	"",					"divider",										"",						"",
+	"C",	$mm_cb_oass,		"Material List Only Shows Assigned", 			$mm_s_oass, 			"mm_updateCB(); mm_build_tab_main()",
 	"C", 	$mm_cb_sass,		"Sort Assigned Materials First",				$mm_s_sass,				"mm_updateCB(); mm_build_tab_main()",	
 	// "C",	$mm_cb_snap,		"Sort Assigned: Snap to top with one material",	$mm_s_snap,				"mm_updateCB();",
 	"", 	"",					"divider",										"",						"",
@@ -710,6 +713,7 @@ global proc mm_build_tab_main() {
 	clear $mm_lastNameplates;
 	global int $mm_bs_wind;
 	global int $mm_bs_name;
+	global int $mm_cb_oass;
 	global int $mm_cb_sass;
 	global string $mm_i_assign;
 	global string $mm_i_texture;
@@ -717,7 +721,9 @@ global proc mm_build_tab_main() {
 	string $mats[] = mm_getFilteredMaterials( mm_getAllMaterials() );
 	$mm_assigned = mm_getAssignedMaterials();
 
-	if ( $mm_cb_sass ) {
+	// Assigned Materials Only in Material List
+	if ( $mm_cb_oass ) { $mats = $mm_assigned; }
+	else if ( $mm_cb_sass ) {
 		string $intersectMaterials[] = stringArrayRemove($mm_assigned, $mats);
 		string $unassigned[] = $intersectMaterials;
 		$intersectMaterials = stringArrayRemove($intersectMaterials, $mats);
@@ -1015,6 +1021,7 @@ global proc mm_build_tab_baker() {
 		radioCollection;
 		radioButton -l "by Element" -sl rad_bake_ele;
 		radioButton -l "by Object" rad_bake_obj;
+		radioButton -l "by UV Shell" -en 0 rad_bake_uvw;
 		button -bgc $bgc[0] $bgc[1] $bgc[2] -w 110 -h $short -l "High Poly Meshes"
 			-ann "Select your high poly mesh(es) and then click this button to load them for baking. (CTRL click to clear button)"
 			-c "mm_bk_storeMesh(\"hp\");" btn_bake_source;
@@ -1061,10 +1068,12 @@ global proc mm_build_tab_baker() {
 			-attachForm 	btn_bake_autoID				"left"		$pad
 			-attachForm 	btn_bake_autoID				"right"		100
 
-			-attachForm		rad_bake_ele 				"top" 		10
+			-attachForm		rad_bake_ele 				"top" 		2
 			-attachControl 	rad_bake_ele 				"left"	 	$pad 					btn_bake_autoID
-			-attachForm		rad_bake_obj 				"top" 		30
+			-attachForm		rad_bake_obj 				"top" 		20
 			-attachControl 	rad_bake_obj 				"left"	 	$pad 					btn_bake_autoID
+			-attachForm		rad_bake_uvw				"top" 		38
+			-attachControl 	rad_bake_uvw				"left"	 	$pad 					btn_bake_autoID
 
 			-attachControl 	btn_bake_source				"top"		$pad 					btn_bake_autoID
 			-attachForm 	btn_bake_source				"left"		$pad
@@ -2922,42 +2931,50 @@ global proc mm_getConfigData() {
 			//Change the global definition to strings for the texture suffix definitions at the end of the config file
 			//If you add more integer config entries, this number (19) must be increased by that many
 			//Additionally, all string values must come at the very end, with all integer values preceding them
-			if ( $l > 19 ) { $cmd = ( "global string $" + $splitID[1] + " = \"" + $splitVal[1] + "\";" ); }
+			if ( $l > 20 ) { $cmd = ( "global string $" + $splitID[1] + " = \"" + $splitVal[1] + "\";" ); }
 			eval $cmd;
 		}
 	}
 
 	else {
 		//This sequence of strings has been set up as an alternative to escaped line breaks within a string, a method that creates an error on Mac OS.
-		string $c00 = "global int $mm_rb_crono = 0; ";
-		string $c01 = "global int $mm_cb_sass = 0; ";
-		string $c02 = "global int $mm_cb_snap = 1; ";
-		string $c03 = "global int $mm_cb_spre = 1; ";
-		string $c04 = "global int $mm_cb_children = 0";
-		string $c05 = "global int $mm_cb_bann = 1; ";
-		string $c06 = "global int $mm_cb_part = 0; ";
-		string $c07 = "global int $mm_cb_attr = 1; ";
-		string $c08 = "global int $mm_cb_inst = 1; ";
-		string $c09 = "global int $mm_cb_cind = 1; ";
-		string $c10 = "global int $mm_cb_find = 0; ";
-		string $c11 = "global int $mm_cb_matchMat = 1; ";
-		string $c12 = "global int $mm_cb_appm = 0; ";
-		string $c13 = "global int $mm_bk_width = 2048; ";
-		string $c14 = "global int $mm_bk_height = 2048; ";
-		string $c15 = "global int $mm_bk_dilation = 16; ";
-		string $c16 = "global int $mm_bs_name = 25; ";
-		string $c17 = "global int $mm_bs_wind = 325; ";
-		string $c18 = "global int $mm_pr_mode = 1; ";
-		string $c19 = "global int $mm_dk_side = 2; ";
-		string $c20 = "global string $mm_load_baseColor = \"_A\"; ";
-		string $c21 = "global string $mm_load_normal = \"_N\"; ";
-		string $c22 = "global string $mm_load_specular = \"_S\"; ";
-		string $c23 = "global string $mm_load_metallic = \"_M\"; ";
-		string $c24 = "global string $mm_load_roughness = \"_R\"; ";
-		string $c25 = "global string $mm_load_emissive = \"_E\"; ";
-		string $c26 = "global string $mm_load_opacity = \"_O\"; ";
-		string $c27 = "global string $mm_load_occlusion = \"_AO\"; ";
-		string $cmd = ( $c00 + $c01 + $c02 + $c03 + $c04 + $c05 + $c06 + $c07 + $c08 + $c09 + $c10 + $c11 + $c12 + $c13 + $c14 + $c15 + $c16 + $c17 + $c18 + $c19 + $c20 + $c21 + $c22 + $c23 + $c24 + $c25 + $c26 + $c27 );
+		string $cmds[] = { 
+			"global int $mm_rb_crono = 0; ",
+			"global int $mm_cb_oass = 0; ",
+			"global int $mm_cb_sass = 0; ",
+			"global int $mm_cb_snap = 1; ",
+			"global int $mm_cb_spre = 1; ",
+			"global int $mm_cb_children = 0",
+			"global int $mm_cb_bann = 1; ",
+			"global int $mm_cb_part = 0; ",
+			"global int $mm_cb_attr = 1; ",
+			"global int $mm_cb_inst = 1; ",
+			"global int $mm_cb_cind = 1; ",
+			"global int $mm_cb_find = 0; ",
+			"global int $mm_cb_matchMat = 1; ",
+			"global int $mm_cb_appm = 0; ",
+			"global int $mm_bk_width = 2048; ",
+			"global int $mm_bk_height = 2048; ",
+			"global int $mm_bk_dilation = 16; ",
+			"global int $mm_bs_name = 25; ",
+			"global int $mm_bs_wind = 325; ",
+			"global int $mm_pr_mode = 1; ",
+			"global int $mm_dk_side = 2; ",
+			"global string $mm_load_baseColor = \"_A\"; ",
+			"global string $mm_load_normal = \"_N\"; ",
+			"global string $mm_load_specular = \"_S\"; ",
+			"global string $mm_load_metallic = \"_M\"; ",
+			"global string $mm_load_roughness = \"_R\"; ",
+			"global string $mm_load_emissive = \"_E\"; ",
+			"global string $mm_load_opacity = \"_O\"; ",
+			"global string $mm_load_occlusion = \"_AO\"; "
+		};
+
+		string $cmd = "";
+		for ( $c in $cmds ) {
+			$cmd += $c;
+		}
+
 		mm_warn("mm_config.txt file not found.  Loading backup settings.");
 		eval $cmd;
 	}
@@ -3849,6 +3866,7 @@ global proc mm_updateCB() {
 	global int $rb_sortChrono;
 	global int $rb_sortAlpha;
 	global int $mm_cb_attr;
+	global int $mm_cb_oass;
 	global int $mm_cb_sass;
 	global int $mm_cb_snap;
 	global int $mm_cb_spre;
@@ -3866,6 +3884,7 @@ global proc mm_updateCB() {
 	$mm_rb_crono = (1-`menuItem -q -rb menuSortAlpha`);
 
 	//menu items that are checkboxes or radio buttons
+	$mm_cb_oass = `menuItem -q -cb "menuSortOnlyAssigned"`;
 	$mm_cb_sass = `menuItem -q -cb "menuSortAssigned"`;
 	// $mm_cb_snap = `menuItem -q -cb "menuSortScrollToTop"`;
 	$mm_cb_spre = `menuItem -q -cb "menuSortPresets"`;
@@ -3877,12 +3896,12 @@ global proc mm_updateCB() {
 	$mm_cb_find = `menuItem -q -cb "menuBonusMatchInSelection"`;
 	$mm_cb_appm = `menuItem -q -cb "menuBonusAppendPrefix"`;
 
+	if ( $mm_cb_oass ) { menuItem -e -en 0 "menuSortAssigned"; }
+	else { menuItem -e -en 1 "menuSortAssigned"; }
 	// menuItem -e -en $mm_cb_sass menuSortScrollToTop;
 
 	//Update Match Material Name checkbox (for auto-load from folder)
-	if ( `checkBox -ex mm_cb_match` ) {
-		$mm_cb_matchMat = `checkBox -q -v mm_cb_match`;
-	}
+
 }
 
 
